@@ -8,7 +8,6 @@ const fileInput = document.getElementById("file-input");
 const distanceLabel = document.getElementById("distance-label");
 const selectionBoxEl = document.getElementById("selection-box");
 const stageEl = document.querySelector(".stage");
-const bondToggle = document.getElementById("bond-toggle");
 const editToggle = document.getElementById("edit-toggle");
 const exportButton = document.getElementById("export-button");
 const rotateMoleculeToggle = document.getElementById("rotate-molecule-toggle");
@@ -582,10 +581,6 @@ function loadXYZ(contents, filename = "file.xyz") {
   scene.add(moleculeGroup);
   resize();
   centerAndFrame(moleculeGroup);
-  if (bondToggle) {
-    bondToggle.checked = showBonds && !bondsSkipped;
-    bondToggle.disabled = bondsSkipped;
-  }
   const bondNote = bondsSkipped ? " (bonds off on iOS)" : "";
   setStatus(`Loaded ${filename} (${atoms.length} atoms)${bondNote}.`);
   hudEl.style.display = "none";
@@ -630,27 +625,14 @@ function handleFile(file) {
   reader.readAsText(file);
 }
 
-if (bondToggle) {
-  bondToggle.checked = showBonds;
-}
-
 function toggleBonds(nextState = !showBonds) {
   showBonds = nextState;
-  if (bondToggle) {
-    bondToggle.checked = showBonds && !bondsSkipped;
-  }
   if (bondGroup) {
     bondGroup.visible = showBonds && !bondsSkipped;
   }
   if (bondsSkipped && showBonds) {
     setStatus("Bonds disabled for performance on iOS.");
   }
-}
-
-if (bondToggle) {
-  bondToggle.addEventListener("change", () => {
-    toggleBonds(bondToggle.checked);
-  });
 }
 
 if (editToggle) {
@@ -821,19 +803,6 @@ if (fullscreenButton) {
   document.addEventListener("MSFullscreenChange", updateFullscreenButton);
   updateFullscreenButton();
 }
-
-window.addEventListener("keydown", (event) => {
-  if (event.metaKey || event.ctrlKey || event.altKey) return;
-  const target = event.target;
-  if (
-    target &&
-    (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
-  ) {
-    return;
-  }
-  const key = event.key.toLowerCase();
-  if (key === "b") toggleBonds();
-});
 
 window.__xyzViewerInitDone = true;
 window.__xyzViewerLoaded = true;
