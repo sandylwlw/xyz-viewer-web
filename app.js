@@ -963,17 +963,18 @@ function addGroupAtAtom(mesh) {
       new THREE.Vector3(-1, 1, -1),
       new THREE.Vector3(-1, -1, 1),
     ].map((v) => v.normalize());
+    const targetDir = direction.clone().negate();
     let reserved = tetra[0];
-    let maxDot = reserved.dot(direction);
+    let maxDot = reserved.dot(targetDir);
     tetra.forEach((vec) => {
-      const dot = vec.dot(direction);
+      const dot = vec.dot(targetDir);
       if (dot > maxDot) {
         maxDot = dot;
         reserved = vec;
       }
     });
-    baseQuat = new THREE.Quaternion().setFromUnitVectors(reserved, direction);
-    axis = direction.clone();
+    baseQuat = new THREE.Quaternion().setFromUnitVectors(reserved, targetDir);
+    axis = targetDir.clone();
     templateAtoms = tetra
       .filter((vec) => vec !== reserved)
       .map((vec) => ({ element: "H", position: vec.clone().multiplyScalar(bond) }));
