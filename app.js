@@ -22,6 +22,7 @@ try {
 
 if (renderer) {
   renderer.setPixelRatio(isIOS ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setClearColor(0xfaf7f1, 1);
 }
 
 const controls = renderer ? new OrbitControls(camera, renderer.domElement) : null;
@@ -124,7 +125,9 @@ function parseXYZ(contents) {
 function buildMolecule(atoms) {
   const group = new THREE.Group();
   const atomMeshes = [];
-  const atomGeometry = new THREE.SphereGeometry(0.6, 32, 32);
+  const atomSegments = isIOS ? 16 : 32;
+  const bondSegments = isIOS ? 8 : 16;
+  const atomGeometry = new THREE.SphereGeometry(0.6, atomSegments, atomSegments);
 
   atoms.forEach((atom) => {
     const color = elementColors[atom.element] ?? 0x9ca3af;
@@ -147,15 +150,18 @@ function buildMolecule(atoms) {
     metalness: 0.1,
   });
 
-  for (let i = 0; i < atomMeshes.length; i += 1) {
-    for (let j = i + 1; j < atomMeshes.length; j += 1) {
-      const a = atomMeshes[i];
-      const b = atomMeshes[j];
-      const threshold = (a.radius + b.radius) * 1.2;
-      const distance = a.mesh.position.distanceTo(b.mesh.position);
-      if (distance > 0.1 && distance <= threshold) {
-        const bond = createBond(a.mesh.position, b.mesh.position, bondMaterial);
-        group.add(bond);
+  const skipBonds = isIOS && atomMeshes.length > 1200;
+  if (!skipBonds) {
+    for (let i = 0; i < atomMeshes.length; i += 1) {
+      for (let j = i + 1; j < atomMeshes.length; j += 1) {
+        const a = atomMeshes[i];
+        const b = atomMeshes[j];
+        const threshold = (a.radius + b.radius) * 1.2;
+        const distance = a.mesh.position.distanceTo(b.mesh.position);
+        if (distance > 0.1 && distance <= threshold) {
+          const bond = createBond(a.mesh.position, b.mesh.position, bondMaterial, bondSegments);
+          group.add(bond);
+        }
       }
     }
   }
@@ -163,10 +169,10 @@ function buildMolecule(atoms) {
   return group;
 }
 
-function createBond(start, end, material) {
+function createBond(start, end, material, radialSegments = 16) {
   const direction = new THREE.Vector3().subVectors(end, start);
   const length = direction.length();
-  const cylinderGeometry = new THREE.CylinderGeometry(0.12, 0.12, length, 16);
+  const cylinderGeometry = new THREE.CylinderGeometry(0.12, 0.12, length, radialSegments);
   const cylinder = new THREE.Mesh(cylinderGeometry, material);
   const midpoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
   cylinder.position.copy(midpoint);
@@ -211,7 +217,8 @@ function loadXYZ(contents, filename = "file.xyz") {
   moleculeGroup = buildMolecule(atoms);
   scene.add(moleculeGroup);
   centerAndFrame(moleculeGroup);
-  setStatus(`Loaded ${filename} (${atoms.length} atoms).`);
+  const bondNote = isIOS && atoms.length > 1200 ? " (bonds off on iOS)" : "";
+  setStatus(`Loaded ${filename} (${atoms.length} atoms)${bondNote}.`);
   hudEl.style.display = "none";
 }
 
