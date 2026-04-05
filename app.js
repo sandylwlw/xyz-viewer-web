@@ -538,8 +538,8 @@ function getScreenPosition(mesh) {
   mesh.getWorldPosition(tempVec);
   tempVec.project(camera);
   return {
-    x: (tempVec.x * 0.5 + 0.5) * rect.width + rect.left,
-    y: (-tempVec.y * 0.5 + 0.5) * rect.height + rect.top,
+    x: (tempVec.x * 0.5 + 0.5) * rect.width,
+    y: (-tempVec.y * 0.5 + 0.5) * rect.height,
   };
 }
 
@@ -865,7 +865,11 @@ renderer?.domElement.addEventListener(
     }
 
     selecting = true;
-    selectStart = { x: event.clientX, y: event.clientY };
+    const selectRect = renderer.domElement.getBoundingClientRect();
+    selectStart = {
+      x: event.clientX - selectRect.left,
+      y: event.clientY - selectRect.top,
+    };
     if (selectionBoxEl) {
       selectionBoxEl.style.display = "block";
       selectionBoxEl.style.left = `${selectStart.x}px`;
@@ -903,10 +907,13 @@ renderer?.domElement.addEventListener("pointermove", (event) => {
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation?.();
-    const left = Math.min(selectStart.x, event.clientX);
-    const top = Math.min(selectStart.y, event.clientY);
-    const width = Math.abs(selectStart.x - event.clientX);
-    const height = Math.abs(selectStart.y - event.clientY);
+    const selectRect = renderer.domElement.getBoundingClientRect();
+    const currentX = event.clientX - selectRect.left;
+    const currentY = event.clientY - selectRect.top;
+    const left = Math.min(selectStart.x, currentX);
+    const top = Math.min(selectStart.y, currentY);
+    const width = Math.abs(selectStart.x - currentX);
+    const height = Math.abs(selectStart.y - currentY);
     if (selectionBoxEl) {
       selectionBoxEl.style.left = `${left}px`;
       selectionBoxEl.style.top = `${top}px`;
@@ -938,8 +945,11 @@ renderer?.domElement.addEventListener("pointerup", (event) => {
   }
   if (selecting) {
     selecting = false;
-    const dx = event.clientX - (selectStart?.x ?? event.clientX);
-    const dy = event.clientY - (selectStart?.y ?? event.clientY);
+    const selectRect = renderer.domElement.getBoundingClientRect();
+    const currentX = event.clientX - selectRect.left;
+    const currentY = event.clientY - selectRect.top;
+    const dx = currentX - (selectStart?.x ?? currentX);
+    const dy = currentY - (selectStart?.y ?? currentY);
     const width = Math.abs(dx);
     const height = Math.abs(dy);
     if (selectionBoxEl) {
@@ -953,10 +963,10 @@ renderer?.domElement.addEventListener("pointerup", (event) => {
       downPoint = null;
       return;
     }
-    const left = Math.min(selectStart?.x ?? 0, event.clientX);
-    const right = Math.max(selectStart?.x ?? 0, event.clientX);
-    const top = Math.min(selectStart?.y ?? 0, event.clientY);
-    const bottom = Math.max(selectStart?.y ?? 0, event.clientY);
+    const left = Math.min(selectStart?.x ?? 0, currentX);
+    const right = Math.max(selectStart?.x ?? 0, currentX);
+    const top = Math.min(selectStart?.y ?? 0, currentY);
+    const bottom = Math.max(selectStart?.y ?? 0, currentY);
     const selected = atomMeshList.filter((mesh) => {
       const screen = getScreenPosition(mesh);
       return screen.x >= left && screen.x <= right && screen.y >= top && screen.y <= bottom;
