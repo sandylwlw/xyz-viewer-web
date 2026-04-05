@@ -223,9 +223,18 @@ function handleFile(file) {
   reader.readAsText(file);
 }
 
-fileInput.addEventListener("change", (event) => {
-  handleFile(event.target.files[0]);
-});
+function bindFileInput() {
+  const input = document.getElementById("file-input");
+  if (!input) return false;
+  input.addEventListener("change", (event) => {
+    handleFile(event.target.files[0]);
+  });
+  return true;
+}
+
+if (!bindFileInput()) {
+  window.addEventListener("DOMContentLoaded", bindFileInput, { once: true });
+}
 
 
 window.addEventListener("dragover", (event) => {
