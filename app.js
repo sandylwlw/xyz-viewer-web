@@ -222,6 +222,11 @@ const pointerNDC = new THREE.Vector2();
 const tempVec = new THREE.Vector3();
 const tempQuat = new THREE.Quaternion();
 
+function syncControlsEnabled() {
+  if (!controls || controls.enabled === undefined) return;
+  controls.enabled = rotateMoleculeMode || !editMode;
+}
+
 const elementColors = {
   H: 0xf8fafc,
   C: 0x111827,
@@ -680,6 +685,7 @@ if (editToggle) {
     editMode = editToggle.checked;
     if (editMode) {
       clearMeasurement();
+      syncControlsEnabled();
       setStatus("Edit mode on. Drag to move, or drag a box to select.");
     } else {
       clearEditSelection();
@@ -687,6 +693,7 @@ if (editToggle) {
       if (rotateMoleculeToggle) rotateMoleculeToggle.checked = false;
       rotateMode = false;
       if (rotateToggle) rotateToggle.checked = false;
+      syncControlsEnabled();
       setStatus("Edit mode off.");
     }
   });
@@ -703,9 +710,7 @@ if (rotateMoleculeToggle) {
     }
     selecting = false;
     if (selectionBoxEl) selectionBoxEl.style.display = "none";
-    if (controls && controls.enabled !== undefined) {
-      controls.enabled = true;
-    }
+    syncControlsEnabled();
     setStatus(rotateMoleculeMode ? "Rotate molecule enabled." : "Rotate molecule disabled.");
   });
 }
@@ -721,6 +726,7 @@ if (rotateToggle) {
       clearMeasurement();
       return;
     }
+    syncControlsEnabled();
     setStatus(rotateMode ? "Rotate selection enabled." : "Rotate selection disabled.");
   });
 }
