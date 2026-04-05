@@ -495,7 +495,7 @@ function removeFromEditSelection(mesh) {
 
 function pushUndoSnapshot(snapshot) {
   if (!snapshot) return;
-  if (snapshot.type !== "add-group" && !snapshot.atoms?.length) return;
+  if (snapshot.type !== "add-group" && snapshot.type !== "delete" && !snapshot.atoms?.length) return;
   undoStack.push(snapshot);
   if (undoStack.length > UNDO_LIMIT) {
     undoStack.shift();
