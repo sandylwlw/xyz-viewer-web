@@ -781,6 +781,14 @@ const bondLengthMap = {
   "H-N": 1.03,
   "O-H": 0.98,
   "H-O": 0.98,
+  "C-F": 1.35,
+  "F-C": 1.35,
+  "C-Cl": 1.77,
+  "Cl-C": 1.77,
+  "C-Br": 1.94,
+  "Br-C": 1.94,
+  "C-I": 2.14,
+  "I-C": 2.14,
   "C-C": 1.54,
   "C-N": 1.47,
   "N-C": 1.47,
@@ -798,6 +806,10 @@ function getBondLength(elementA, elementB) {
 
 const groupTemplates = {
   H: { anchorElement: "H", atoms: [] },
+  F: { anchorElement: "F", atoms: [] },
+  Cl: { anchorElement: "Cl", atoms: [] },
+  Br: { anchorElement: "Br", atoms: [] },
+  I: { anchorElement: "I", atoms: [] },
   OH: {
     anchorElement: "O",
     atoms: [{ element: "H", position: new THREE.Vector3(0, 0, 0.98) }],
