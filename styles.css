@@ -189,6 +189,22 @@ body {
   touch-action: none;
 }
 
+.distance-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -50%);
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+  display: none;
+  z-index: 3;
+}
+
 .hud {
   position: absolute;
   top: 24px;

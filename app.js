@@ -8,6 +8,7 @@ const statusEl = document.getElementById("status");
 const hudEl = document.getElementById("hud");
 const fileInput = document.getElementById("file-input");
 const loadButton = document.getElementById("load-button");
+const distanceLabel = document.getElementById("distance-label");
 let selectedFile = null;
 let selectedFileName = "";
 
@@ -181,6 +182,11 @@ fillLight.position.set(-30, -10, 20);
 scene.add(fillLight);
 
 let moleculeGroup = null;
+let atomMeshList = [];
+let selectedAtoms = [];
+let distanceLine = null;
+const raycaster = new THREE.Raycaster();
+const pointerNDC = new THREE.Vector2();
 
 const elementColors = {
   H: 0xf8fafc,
@@ -301,6 +307,7 @@ function buildMolecule(atoms) {
     }
   }
 
+  atomMeshList = atomMeshes.map((item) => item.mesh);
   return group;
 }
 
@@ -342,6 +349,78 @@ function clearMolecule() {
     if (child.material) child.material.dispose();
   });
   moleculeGroup = null;
+  atomMeshList = [];
+  clearMeasurement();
+}
+
+function clearMeasurement() {
+  if (distanceLine && moleculeGroup) {
+    moleculeGroup.remove(distanceLine);
+    distanceLine.geometry.dispose();
+    distanceLine.material.dispose();
+  }
+  distanceLine = null;
+  selectedAtoms.forEach((mesh) => {
+    if (mesh.material && mesh.material.emissive) {
+      mesh.material.emissive.setHex(0x000000);
+    }
+  });
+  selectedAtoms = [];
+  if (distanceLabel) {
+    distanceLabel.style.display = "none";
+  }
+}
+
+function updateDistanceLabel() {
+  if (!distanceLine || !distanceLabel || !moleculeGroup) return;
+  const positions = distanceLine.geometry.attributes.position.array;
+  const midpoint = new THREE.Vector3(
+    (positions[0] + positions[3]) / 2,
+    (positions[1] + positions[4]) / 2,
+    (positions[2] + positions[5]) / 2
+  );
+  const worldMid = moleculeGroup.localToWorld(midpoint.clone());
+  const projected = worldMid.project(camera);
+  const rect = renderer.domElement.getBoundingClientRect();
+  const x = (projected.x * 0.5 + 0.5) * rect.width + rect.left;
+  const y = (-projected.y * 0.5 + 0.5) * rect.height + rect.top;
+  distanceLabel.style.transform = `translate(${x}px, ${y}px)`;
+}
+
+function selectAtom(mesh) {
+  if (selectedAtoms.includes(mesh)) return;
+  if (selectedAtoms.length === 2) {
+    clearMeasurement();
+  }
+  if (mesh.material && mesh.material.emissive) {
+    mesh.material.emissive.setHex(0x0f766e);
+  }
+  selectedAtoms.push(mesh);
+  if (selectedAtoms.length === 2) {
+    const [a, b] = selectedAtoms;
+    const geometry = new THREE.BufferGeometry().setFromPoints([a.position, b.position]);
+    const material = new THREE.LineBasicMaterial({ color: 0x0f766e });
+    distanceLine = new THREE.Line(geometry, material);
+    moleculeGroup.add(distanceLine);
+    const distance = a.position.distanceTo(b.position);
+    if (distanceLabel) {
+      distanceLabel.textContent = `${distance.toFixed(2)} A`;
+      distanceLabel.style.display = "block";
+    }
+    updateDistanceLabel();
+  }
+}
+
+function pickAtom(clientX, clientY) {
+  if (!renderer || !atomMeshList.length) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointerNDC.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  pointerNDC.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointerNDC, camera);
+  const intersections = raycaster.intersectObjects(atomMeshList, false);
+  if (intersections.length) {
+    selectAtom(intersections[0].object);
+  }
 }
 
 function loadXYZ(contents, filename = "file.xyz") {
@@ -482,6 +561,7 @@ function animate() {
   if (controls) controls.update();
   if (renderer) {
     renderer.render(scene, camera);
+    updateDistanceLabel();
     const gl = renderer.getContext?.();
     if (gl) {
       const error = gl.getError();
@@ -495,3 +575,23 @@ function animate() {
 if (renderer) {
   animate();
 }
+
+let downPoint = null;
+renderer?.domElement.addEventListener("pointerdown", (event) => {
+  downPoint = { x: event.clientX, y: event.clientY };
+});
+renderer?.domElement.addEventListener("pointerup", (event) => {
+  if (!downPoint) return;
+  const dx = event.clientX - downPoint.x;
+  const dy = event.clientY - downPoint.y;
+  if (Math.hypot(dx, dy) < 6) {
+    pickAtom(event.clientX, event.clientY);
+  }
+  downPoint = null;
+});
+renderer?.domElement.addEventListener("touchend", (event) => {
+  if (event.changedTouches.length === 1) {
+    const touch = event.changedTouches[0];
+    pickAtom(touch.clientX, touch.clientY);
+  }
+});
