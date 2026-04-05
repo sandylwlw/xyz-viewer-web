@@ -106,40 +106,51 @@ body {
   color: var(--ink-soft);
 }
 
-.file-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
+.file-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.file-picker-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.file-input-visible {
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.file-input-visible::file-selector-button {
   background: var(--accent);
   color: white;
+  border: none;
   padding: 12px 18px;
   border-radius: 999px;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
   box-shadow: 0 18px 30px rgba(15, 118, 110, 0.28);
-  user-select: none;
-  position: relative;
-  overflow: hidden;
-  z-index: 3;
+  margin-right: 12px;
 }
 
-.file-button:focus {
-  outline: 3px solid rgba(15, 118, 110, 0.35);
-  outline-offset: 4px;
-}
-
-.file-input {
-  position: absolute;
-  inset: 0;
-  opacity: 0.01;
+.file-input-visible::-webkit-file-upload-button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 14px;
   cursor: pointer;
-  font-size: 16px;
-  z-index: 2;
-}
-
-.file-button span {
-  pointer-events: none;
+  box-shadow: 0 18px 30px rgba(15, 118, 110, 0.28);
+  margin-right: 12px;
 }
 
 .stage {
@@ -194,44 +205,6 @@ body {
   border-radius: 10px;
 }
 
-.hud-paste {
-  margin-top: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.hud-paste-title {
-  font-weight: 600;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink-soft);
-}
-
-#xyz-text {
-  width: 100%;
-  border-radius: 12px;
-  border: 1px solid var(--panel-border);
-  padding: 10px 12px;
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
-  font-size: 13px;
-  line-height: 1.4;
-  background: rgba(255, 255, 255, 0.8);
-  resize: vertical;
-}
-
-.hud-paste-button {
-  align-self: flex-start;
-  border: none;
-  background: #0f172a;
-  color: white;
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 12px;
-  cursor: pointer;
-}
 
 .footer {
   position: relative;

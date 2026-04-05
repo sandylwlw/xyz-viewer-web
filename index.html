@@ -27,14 +27,10 @@
           <div class="brand-subtitle">Open .xyz files and explore in 3D</div>
         </div>
       </div>
-      <label class="file-button" for="file-input">
-        <input
-          id="file-input"
-          class="file-input"
-          type="file"
-        />
-        <span>Open XYZ</span>
-      </label>
+      <div class="file-picker">
+        <div class="file-picker-title">Open XYZ</div>
+        <input id="file-input" class="file-input-visible" type="file" />
+      </div>
     </header>
 
     <main class="stage">
@@ -45,11 +41,6 @@
           Tap “Open XYZ” to choose a file from the iPhone Files app. If .xyz is hidden, rename to .txt and try again.
         </div>
         <div class="hud-tip">Gestures: one finger orbit, two fingers pan, pinch to zoom.</div>
-        <div class="hud-paste">
-          <div class="hud-paste-title">Or paste XYZ text</div>
-          <textarea id="xyz-text" rows="6" placeholder="Paste .xyz content here"></textarea>
-          <button class="hud-paste-button" id="load-text" type="button">Load from text</button>
-        </div>
       </section>
     </main>
 

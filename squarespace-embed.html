@@ -7,14 +7,10 @@
         <div class="xyzviewer-subtitle">Open .xyz files and explore in 3D</div>
       </div>
     </div>
-    <label class="xyzviewer-button" for="xyzviewer-input">
-      <input
-        id="xyzviewer-input"
-        class="xyzviewer-input"
-        type="file"
-      />
-      <span>Open XYZ</span>
-    </label>
+    <div class="xyzviewer-file-picker">
+      <div class="xyzviewer-file-title">Open XYZ</div>
+      <input id="xyzviewer-input" class="xyzviewer-file-input" type="file" />
+    </div>
   </div>
 
   <div class="xyzviewer-stage">
@@ -27,13 +23,6 @@
       </div>
       <div class="xyzviewer-hud-tip">
         Gestures: one finger orbit, two fingers pan, pinch to zoom.
-      </div>
-      <div class="xyzviewer-hud-paste">
-        <div class="xyzviewer-hud-paste-title">Or paste XYZ text</div>
-        <textarea id="xyzviewer-text" rows="6" placeholder="Paste .xyz content here"></textarea>
-        <button class="xyzviewer-hud-paste-button" id="xyzviewer-load" type="button">
-          Load from text
-        </button>
       </div>
     </div>
   </div>
@@ -97,38 +86,51 @@
     color: var(--xyz-ink-soft);
   }
 
-  .xyzviewer-button {
-    appearance: none;
-    border: none;
+  .xyzviewer-file-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+  }
+
+  .xyzviewer-file-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--xyz-ink-soft);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .xyzviewer-file-input {
+    font-family: "Space Grotesk", "Segoe UI", sans-serif;
+    font-size: 14px;
+    color: var(--xyz-ink);
+  }
+
+  .xyzviewer-file-input::file-selector-button {
     background: var(--xyz-accent);
     color: white;
+    border: none;
     padding: 12px 18px;
     border-radius: 999px;
     font-weight: 600;
     font-size: 14px;
     cursor: pointer;
     box-shadow: 0 18px 30px rgba(15, 118, 110, 0.28);
-    position: relative;
-    overflow: hidden;
-    z-index: 3;
+    margin-right: 12px;
   }
 
-  .xyzviewer-button:focus {
-    outline: 3px solid rgba(15, 118, 110, 0.35);
-    outline-offset: 4px;
-  }
-
-  .xyzviewer-input {
-    position: absolute;
-    inset: 0;
-    opacity: 0.01;
+  .xyzviewer-file-input::-webkit-file-upload-button {
+    background: var(--xyz-accent);
+    color: white;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 14px;
     cursor: pointer;
-    font-size: 16px;
-    z-index: 2;
-  }
-
-  .xyzviewer-button span {
-    pointer-events: none;
+    box-shadow: 0 18px 30px rgba(15, 118, 110, 0.28);
+    margin-right: 12px;
   }
 
   .xyzviewer-stage {
@@ -182,44 +184,6 @@
     border-radius: 10px;
   }
 
-  .xyzviewer-hud-paste {
-    margin-top: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .xyzviewer-hud-paste-title {
-    font-weight: 600;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--xyz-ink-soft);
-  }
-
-  #xyzviewer-text {
-    width: 100%;
-    border-radius: 12px;
-    border: 1px solid var(--xyz-panel-border);
-    padding: 10px 12px;
-    font-family: "Space Grotesk", "Segoe UI", sans-serif;
-    font-size: 13px;
-    line-height: 1.4;
-    background: rgba(255, 255, 255, 0.8);
-    resize: vertical;
-  }
-
-  .xyzviewer-hud-paste-button {
-    align-self: flex-start;
-    border: none;
-    background: #0f172a;
-    color: white;
-    padding: 8px 14px;
-    border-radius: 999px;
-    font-weight: 600;
-    font-size: 12px;
-    cursor: pointer;
-  }
 
   .xyzviewer-footer {
     margin-top: 14px;
@@ -279,8 +243,6 @@
   const statusEl = root.querySelector("#xyzviewer-status");
   const hudEl = root.querySelector("#xyzviewer-hud");
   const fileInput = root.querySelector("#xyzviewer-input");
-  const textInput = root.querySelector("#xyzviewer-text");
-  const loadTextButton = root.querySelector("#xyzviewer-load");
   const stage = root.querySelector(".xyzviewer-stage");
 
   const scene = new THREE.Scene();
@@ -487,20 +449,9 @@
     reader.readAsText(file);
   }
 
-  function handleText() {
-    const contents = textInput.value.trim();
-    if (!contents) {
-      setStatus("Paste XYZ content first.");
-      return;
-    }
-    loadXYZ(contents, "pasted.xyz");
-  }
-
   fileInput.addEventListener("change", (event) => {
     handleFile(event.target.files[0]);
   });
-
-  loadTextButton.addEventListener("click", handleText);
 
 
   function resize() {

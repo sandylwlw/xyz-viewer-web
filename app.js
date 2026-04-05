@@ -5,8 +5,6 @@ const canvas = document.getElementById("viewer");
 const statusEl = document.getElementById("status");
 const hudEl = document.getElementById("hud");
 const fileInput = document.getElementById("file-input");
-const textInput = document.getElementById("xyz-text");
-const loadTextButton = document.getElementById("load-text");
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xfaf7f1);
@@ -225,20 +223,9 @@ function handleFile(file) {
   reader.readAsText(file);
 }
 
-function handleText() {
-  const contents = textInput.value.trim();
-  if (!contents) {
-    setStatus("Paste XYZ content first.");
-    return;
-  }
-  loadXYZ(contents, "pasted.xyz");
-}
-
 fileInput.addEventListener("change", (event) => {
   handleFile(event.target.files[0]);
 });
-
-loadTextButton.addEventListener("click", handleText);
 
 
 window.addEventListener("dragover", (event) => {
