@@ -275,6 +275,29 @@ body.pseudo-fullscreen .toolbox {
   color: var(--ink-soft);
 }
 
+.tool-button {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: white;
+  color: #0f172a;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 12px 20px rgba(15, 23, 42, 0.08);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.tool-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 24px rgba(15, 23, 42, 0.12);
+}
+
+.tool-button.active {
+  border-color: rgba(15, 118, 110, 0.5);
+  box-shadow: 0 14px 24px rgba(15, 118, 110, 0.2);
+}
+
 .toolbox-toggle {
   border: 1px solid rgba(15, 23, 42, 0.12);
   background: white;
@@ -325,6 +348,37 @@ body.pseudo-fullscreen .toolbox {
 
 .toolbox-actions-row .tool-button {
   flex: 1;
+}
+
+.group-adder {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.group-adder-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.group-adder-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.group-select {
+  flex: 1;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f172a;
+  background: white;
 }
 
 
@@ -399,6 +453,10 @@ body.pseudo-fullscreen .toolbox {
     margin: 0;
     width: auto;
     z-index: 4;
+  }
+
+  .group-adder {
+    display: none;
   }
 
 

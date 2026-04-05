@@ -64,6 +64,22 @@
           <input id="rotate-toggle" type="checkbox" />
           <span>Rotate selection</span>
         </label>
+        <div class="group-adder">
+          <label class="group-adder-label" for="group-select">Add group</label>
+          <div class="group-adder-row">
+            <select id="group-select" class="group-select">
+              <option value="H">-H</option>
+              <option value="OH">-OH</option>
+              <option value="NH2">-NH2</option>
+              <option value="CH3">-CH3</option>
+              <option value="COOH">-COOH</option>
+              <option value="Ph">Ph</option>
+              <option value="Cyclohexyl">Cyclohexyl</option>
+              <option value="Cyclopentyl">Cyclopentyl</option>
+            </select>
+            <button class="tool-button" id="add-group-button" type="button">Add</button>
+          </div>
+        </div>
         <button class="tool-button" id="undo-button" type="button">Undo</button>
         <div class="toolbox-hint">
           Edit mode: drag atoms to move, drag a box to select.
@@ -107,7 +123,7 @@
       onload="window.__controlsLoaded=true;setBootStatus('OrbitControls loaded.')"
       onerror="document.getElementById('status').textContent='Failed to load OrbitControls.js'"
     ></script>
-    <script src="app.js?v=nonmodule-34"></script>
+    <script src="app.js?v=nonmodule-36"></script>
     <script>
       setTimeout(() => {
         if (window.__xyzViewerLegacyLoaded) return;

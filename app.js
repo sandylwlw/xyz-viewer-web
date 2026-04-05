@@ -17,6 +17,8 @@ const toolboxEl = document.getElementById("toolbox");
 const toolboxToggle = document.getElementById("toolbox-toggle");
 const filePickerButton = document.getElementById("file-picker-button");
 const fullscreenButton = document.getElementById("fullscreen-button");
+const groupSelect = document.getElementById("group-select");
+const addGroupButton = document.getElementById("add-group-button");
 
 if (!window.THREE) {
   setStatus("THREE failed to load.");
@@ -217,6 +219,8 @@ let rotateAccumAngle = 0;
 let bondsHiddenForDrag = false;
 let selecting = false;
 let selectStart = null;
+let addGroupMode = false;
+let selectedGroupType = groupSelect?.value || "H";
 const raycaster = new THREE.Raycaster();
 const pointerNDC = new THREE.Vector2();
 const tempVec = new THREE.Vector3();
@@ -486,7 +490,8 @@ function removeFromEditSelection(mesh) {
 }
 
 function pushUndoSnapshot(snapshot) {
-  if (!snapshot || !snapshot.atoms?.length) return;
+  if (!snapshot) return;
+  if (snapshot.type !== "add-group" && !snapshot.atoms?.length) return;
   undoStack.push(snapshot);
   if (undoStack.length > UNDO_LIMIT) {
     undoStack.shift();
@@ -510,9 +515,24 @@ function undoMove() {
     setStatus("Nothing to undo.");
     return;
   }
-  snapshot.atoms.forEach((mesh, index) => {
-    mesh.position.copy(snapshot.before[index]);
-  });
+  if (snapshot.type === "add-group") {
+    snapshot.added.forEach((info) => {
+      moleculeGroup.remove(info.mesh);
+      info.mesh.geometry?.dispose();
+      info.mesh.material?.dispose();
+    });
+    atomInfoList = atomInfoList.filter((info) => !snapshot.added.includes(info));
+    atomMeshList = atomMeshList.filter((mesh) => !snapshot.added.some((info) => info.mesh === mesh));
+    const anchorInfo = atomInfoList[snapshot.anchorIndex];
+    if (anchorInfo) {
+      anchorInfo.element = snapshot.anchorElement;
+      applyAtomStyle(anchorInfo.mesh, anchorInfo.element);
+    }
+  } else {
+    snapshot.atoms.forEach((mesh, index) => {
+      mesh.position.copy(snapshot.before[index]);
+    });
+  }
   if (bondGroup && showBonds && !bondsSkipped) {
     rebuildBonds(atomInfoList, bondGroup, isIOS ? 8 : 16);
     bondGroup.visible = true;
@@ -678,6 +698,170 @@ function exportXYZ() {
   setStatus("Exported XYZ file.");
 }
 
+function applyAtomStyle(mesh, element) {
+  const color = elementColors[element] ?? 0x9ca3af;
+  if (mesh.material && mesh.material.color) {
+    mesh.material.color.setHex(color);
+  }
+  const radius = covalentRadii[element] ?? 0.9;
+  mesh.scale.setScalar(radius * 0.7 + 0.2);
+}
+
+function createAtomMesh(element, position) {
+  const segments = isIOS ? 16 : 32;
+  const geometry = new THREE.SphereGeometry(0.6, segments, segments);
+  const material = new THREE.MeshStandardMaterial({
+    color: elementColors[element] ?? 0x9ca3af,
+    roughness: 0.35,
+    metalness: 0.1,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.copy(position);
+  applyAtomStyle(mesh, element);
+  return mesh;
+}
+
+const groupTemplates = {
+  H: { anchorElement: "H", atoms: [] },
+  OH: {
+    anchorElement: "O",
+    atoms: [{ element: "H", position: new THREE.Vector3(0, 0, 0.98) }],
+  },
+  NH2: {
+    anchorElement: "N",
+    atoms: (() => {
+      const bond = 1.02;
+      const theta = (107 * Math.PI) / 360;
+      return [
+        { element: "H", position: new THREE.Vector3(Math.sin(theta), 0, Math.cos(theta)).multiplyScalar(bond) },
+        { element: "H", position: new THREE.Vector3(-Math.sin(theta), 0, Math.cos(theta)).multiplyScalar(bond) },
+      ];
+    })(),
+  },
+  CH3: {
+    anchorElement: "C",
+    atoms: (() => {
+      const bond = 1.09;
+      const dirs = [
+        new THREE.Vector3(1, 1, 1),
+        new THREE.Vector3(-1, -1, 1),
+        new THREE.Vector3(-1, 1, -1),
+      ];
+      return dirs.map((dir) => ({
+        element: "H",
+        position: dir.normalize().multiplyScalar(bond),
+      }));
+    })(),
+  },
+  COOH: {
+    anchorElement: "C",
+    atoms: [
+      { element: "O", position: new THREE.Vector3(0, 0, 1.23) },
+      { element: "O", position: new THREE.Vector3(1.2, 0, -0.3) },
+      { element: "H", position: new THREE.Vector3(1.2, 0, 0.67) },
+    ],
+  },
+  Ph: {
+    anchorElement: "C",
+    atoms: (() => {
+      const radius = 1.4;
+      const atoms = [];
+      for (let i = 1; i < 6; i += 1) {
+        const angle = (i * Math.PI) / 3;
+        atoms.push({
+          element: "C",
+          position: new THREE.Vector3(radius * Math.cos(angle), radius * Math.sin(angle), 0),
+        });
+      }
+      return atoms;
+    })(),
+  },
+  Cyclohexyl: {
+    anchorElement: "C",
+    atoms: (() => {
+      const radius = 1.54;
+      const atoms = [];
+      for (let i = 1; i < 6; i += 1) {
+        const angle = (i * Math.PI) / 3;
+        atoms.push({
+          element: "C",
+          position: new THREE.Vector3(radius * Math.cos(angle), radius * Math.sin(angle), 0),
+        });
+      }
+      return atoms;
+    })(),
+  },
+  Cyclopentyl: {
+    anchorElement: "C",
+    atoms: (() => {
+      const radius = 1.5;
+      const atoms = [];
+      for (let i = 1; i < 5; i += 1) {
+        const angle = (i * 2 * Math.PI) / 5;
+        atoms.push({
+          element: "C",
+          position: new THREE.Vector3(radius * Math.cos(angle), radius * Math.sin(angle), 0),
+        });
+      }
+      return atoms;
+    })(),
+  },
+};
+
+function addGroupAtAtom(mesh) {
+  if (!moleculeGroup || !atomInfoList.length) {
+    setStatus("Load a molecule first.");
+    return;
+  }
+  const template = groupTemplates[selectedGroupType] || groupTemplates.H;
+  const anchorIndex = atomInfoList.findIndex((info) => info.mesh === mesh);
+  if (anchorIndex < 0) return;
+  const anchorInfo = atomInfoList[anchorIndex];
+  const prevElement = anchorInfo.element;
+  anchorInfo.element = template.anchorElement;
+  applyAtomStyle(anchorInfo.mesh, anchorInfo.element);
+
+  const neighbors = atomInfoList
+    .map((info, idx) => ({ info, idx }))
+    .filter((item) => item.info.mesh !== mesh)
+    .map((item) => ({
+      idx: item.idx,
+      distance: item.info.mesh.position.distanceTo(mesh.position),
+    }))
+    .sort((a, b) => a.distance - b.distance);
+  const neighbor = neighbors[0];
+  const direction = neighbor
+    ? mesh.position.clone().sub(atomInfoList[neighbor.idx].mesh.position).normalize()
+    : camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(-1).normalize();
+  const alignQuat = new THREE.Quaternion().setFromUnitVectors(
+    new THREE.Vector3(0, 0, 1),
+    direction
+  );
+
+  const added = [];
+  template.atoms.forEach((atom) => {
+    const pos = atom.position.clone().applyQuaternion(alignQuat).add(mesh.position);
+    const atomMesh = createAtomMesh(atom.element, pos);
+    moleculeGroup.add(atomMesh);
+    const info = { mesh: atomMesh, radius: covalentRadii[atom.element] ?? 0.9, element: atom.element };
+    atomInfoList.push(info);
+    atomMeshList.push(atomMesh);
+    added.push(info);
+  });
+
+  if (bondGroup && showBonds && !bondsSkipped) {
+    rebuildBonds(atomInfoList, bondGroup, isIOS ? 8 : 16);
+    bondGroup.visible = true;
+  }
+  pushUndoSnapshot({
+    type: "add-group",
+    anchorIndex,
+    anchorElement: prevElement,
+    added,
+  });
+  setStatus(`Added ${selectedGroupType}.`);
+}
+
 function handleFile(file) {
   if (!file) return;
   setStatus(`Reading ${file.name} (${file.size} bytes)...`);
@@ -776,6 +960,31 @@ if (fileInput) {
     const file = event.target.files?.[0];
     if (file) {
       handleFile(file);
+    }
+  });
+}
+
+if (groupSelect) {
+  groupSelect.addEventListener("change", () => {
+    selectedGroupType = groupSelect.value;
+  });
+}
+
+if (addGroupButton) {
+  addGroupButton.addEventListener("click", () => {
+    addGroupMode = !addGroupMode;
+    addGroupButton.classList.toggle("active", addGroupMode);
+    if (addGroupMode) {
+      if (!editMode) {
+        editMode = true;
+        if (editToggle) editToggle.checked = true;
+        syncControlsEnabled();
+      }
+      rotateMoleculeMode = false;
+      if (rotateMoleculeToggle) rotateMoleculeToggle.checked = false;
+      setStatus(`Click an atom to replace with ${selectedGroupType}.`);
+    } else {
+      setStatus("Add group cancelled.");
     }
   });
 }
@@ -1047,6 +1256,18 @@ renderer?.domElement.addEventListener(
     if (!editMode) return;
     const hit = pickAtomForDrag(event.clientX, event.clientY);
     if (rotateMoleculeMode) {
+      return;
+    }
+    if (addGroupMode && hit) {
+      addGroupAtAtom(hit);
+      addGroupMode = false;
+      if (addGroupButton) addGroupButton.classList.remove("active");
+      downPoint = null;
+      return;
+    }
+    if (addGroupMode && !hit) {
+      setStatus("Click an atom to add the group.");
+      downPoint = null;
       return;
     }
     event.preventDefault();
