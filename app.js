@@ -15,6 +15,7 @@ const clearMeasureButton = document.getElementById("measure-clear");
 const snapshotButton = document.getElementById("snapshot-button");
 const bondToggle = document.getElementById("bond-toggle");
 const editToggle = document.getElementById("edit-toggle");
+const rotateMoleculeToggle = document.getElementById("rotate-molecule-toggle");
 const rotateToggle = document.getElementById("rotate-toggle");
 let selectedFile = null;
 let selectedFileName = "";
@@ -202,6 +203,7 @@ let distanceLine = null;
 let showBonds = true;
 let bondsSkipped = false;
 let editMode = false;
+let rotateMoleculeMode = false;
 let rotateMode = false;
 let draggingAtom = null;
 let dragOffset = null;
@@ -749,10 +751,30 @@ if (editToggle) {
       setStatus("Edit mode on. Drag to move, or drag a box to select.");
     } else {
       clearEditSelection();
+      rotateMoleculeMode = false;
+      if (rotateMoleculeToggle) rotateMoleculeToggle.checked = false;
       rotateMode = false;
       if (rotateToggle) rotateToggle.checked = false;
       setStatus("Edit mode off.");
     }
+  });
+}
+
+if (rotateMoleculeToggle) {
+  rotateMoleculeToggle.checked = rotateMoleculeMode;
+  rotateMoleculeToggle.addEventListener("change", () => {
+    rotateMoleculeMode = rotateMoleculeToggle.checked;
+    if (rotateMoleculeMode && !editMode) {
+      editMode = true;
+      if (editToggle) editToggle.checked = true;
+      clearMeasurement();
+    }
+    selecting = false;
+    if (selectionBoxEl) selectionBoxEl.style.display = "none";
+    if (controls && controls.enabled !== undefined) {
+      controls.enabled = true;
+    }
+    setStatus(rotateMoleculeMode ? "Rotate molecule enabled." : "Rotate molecule disabled.");
   });
 }
 
@@ -879,6 +901,9 @@ renderer?.domElement.addEventListener(
     downPoint = { x: event.clientX, y: event.clientY };
     if (!editMode) return;
     const hit = pickAtomForDrag(event.clientX, event.clientY);
+    if (rotateMoleculeMode) {
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation?.();
