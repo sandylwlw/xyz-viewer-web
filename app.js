@@ -9,10 +9,6 @@ const loadButton = document.getElementById("load-button");
 const distanceLabel = document.getElementById("distance-label");
 const selectionBoxEl = document.getElementById("selection-box");
 const stageEl = document.querySelector(".stage");
-const demoButton = document.getElementById("demo-button");
-const resetButton = document.getElementById("reset-button");
-const clearMeasureButton = document.getElementById("measure-clear");
-const snapshotButton = document.getElementById("snapshot-button");
 const bondToggle = document.getElementById("bond-toggle");
 const editToggle = document.getElementById("edit-toggle");
 const rotateMoleculeToggle = document.getElementById("rotate-molecule-toggle");
@@ -225,22 +221,6 @@ const raycaster = new THREE.Raycaster();
 const pointerNDC = new THREE.Vector2();
 const tempVec = new THREE.Vector3();
 const tempQuat = new THREE.Quaternion();
-
-const demoXYZ = `12
-Demo: formamide
-C  0.0000  0.0000  0.0000
-O  1.2000  0.0000  0.0000
-N -1.2000  0.0000  0.0000
-H -1.6000  0.9000  0.0000
-H -1.6000 -0.9000  0.0000
-H  0.0000  0.0000  1.0500
-C  2.4000  0.0000  0.0000
-H  2.8000  0.9000  0.0000
-H  2.8000 -0.9000  0.0000
-H  2.4000  0.0000  1.0500
-H -2.4000  0.0000  0.0000
-H -2.8000  0.0000  0.9000
-`;
 
 const elementColors = {
   H: 0xf8fafc,
@@ -688,56 +668,6 @@ function toggleBonds(nextState = !showBonds) {
   }
 }
 
-function loadDemo() {
-  loadXYZ(demoXYZ, "demo.xyz");
-}
-
-function resetView() {
-  if (!moleculeGroup) {
-    setStatus("Load a molecule first.");
-    return;
-  }
-  centerAndFrame(moleculeGroup);
-  setStatus("View reset.");
-}
-
-function clearMeasurementAction() {
-  clearMeasurement();
-  setStatus("Measurement cleared.");
-}
-
-function saveSnapshot() {
-  if (!renderer) {
-    setStatus("Renderer not ready.");
-    return;
-  }
-  const canvasEl = renderer.domElement;
-  const download = (blob) => {
-    if (!blob) {
-      setStatus("Snapshot failed.");
-      return;
-    }
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `xyz-viewer-${Date.now()}.png`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setStatus("Saved PNG snapshot.");
-  };
-  if (canvasEl.toBlob) {
-    canvasEl.toBlob(download, "image/png");
-  } else {
-    const dataUrl = canvasEl.toDataURL("image/png");
-    fetch(dataUrl)
-      .then((res) => res.blob())
-      .then(download)
-      .catch(() => setStatus("Snapshot failed."));
-  }
-}
-
 if (bondToggle) {
   bondToggle.addEventListener("change", () => {
     toggleBonds(bondToggle.checked);
@@ -795,22 +725,6 @@ if (rotateToggle) {
   });
 }
 
-if (demoButton) {
-  demoButton.addEventListener("click", loadDemo);
-}
-
-if (resetButton) {
-  resetButton.addEventListener("click", resetView);
-}
-
-if (clearMeasureButton) {
-  clearMeasureButton.addEventListener("click", clearMeasurementAction);
-}
-
-if (snapshotButton) {
-  snapshotButton.addEventListener("click", saveSnapshot);
-}
-
 if (toolboxToggle && toolboxEl) {
   toolboxToggle.addEventListener("click", () => {
     const collapsed = toolboxEl.classList.toggle("collapsed");
@@ -828,11 +742,7 @@ window.addEventListener("keydown", (event) => {
     return;
   }
   const key = event.key.toLowerCase();
-  if (key === "r") resetView();
-  if (key === "c") clearMeasurementAction();
   if (key === "b") toggleBonds();
-  if (key === "s") saveSnapshot();
-  if (key === "d") loadDemo();
 });
 
 window.__xyzViewerInitDone = true;

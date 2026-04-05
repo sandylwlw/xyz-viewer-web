@@ -55,12 +55,6 @@
           <div class="toolbox-title">Tools</div>
           <button class="toolbox-toggle" id="toolbox-toggle" type="button">Hide</button>
         </div>
-        <div class="toolbox-grid">
-          <button class="tool-button" id="demo-button" type="button">Load demo</button>
-          <button class="tool-button" id="reset-button" type="button">Reset view</button>
-          <button class="tool-button" id="measure-clear" type="button">Clear measure</button>
-          <button class="tool-button" id="snapshot-button" type="button">Save PNG</button>
-        </div>
         <label class="tool-toggle">
           <input id="bond-toggle" type="checkbox" checked />
           <span>Show bonds</span>
@@ -116,7 +110,7 @@
       onload="window.__controlsLoaded=true;setBootStatus('OrbitControls loaded.')"
       onerror="document.getElementById('status').textContent='Failed to load OrbitControls.js'"
     ></script>
-    <script src="app.js?v=nonmodule-8"></script>
+    <script src="app.js?v=nonmodule-9"></script>
     <script>
       setTimeout(() => {
         if (window.__xyzViewerLegacyLoaded) return;
