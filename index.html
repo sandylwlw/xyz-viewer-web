@@ -83,7 +83,7 @@
     ></script>
     <script
       src="app-legacy.js"
-      onload="window.__legacyTagLoaded=true;setBootStatus('Legacy script loaded.')"
+      onload="window.__legacyTagLoaded=true;setTimeout(() => { if (window.__xyzViewerLegacyLoaded) { setBootStatus('Legacy viewer booted.'); } else { document.getElementById('status').textContent = 'Legacy script failed to execute.'; } }, 200)"
       onerror="document.getElementById('status').textContent='Failed to load app-legacy.js'"
     ></script>
   </body>
