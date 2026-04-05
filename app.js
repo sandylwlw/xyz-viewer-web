@@ -4,8 +4,6 @@
 const canvas = document.getElementById("viewer");
 const statusEl = document.getElementById("status");
 const hudEl = document.getElementById("hud");
-const fileInput = document.getElementById("file-input");
-const loadButton = document.getElementById("load-button");
 const distanceLabel = document.getElementById("distance-label");
 const selectionBoxEl = document.getElementById("selection-box");
 const stageEl = document.querySelector(".stage");
@@ -16,8 +14,6 @@ const rotateMoleculeToggle = document.getElementById("rotate-molecule-toggle");
 const rotateToggle = document.getElementById("rotate-toggle");
 const toolboxEl = document.getElementById("toolbox");
 const toolboxToggle = document.getElementById("toolbox-toggle");
-let selectedFile = null;
-let selectedFileName = "";
 
 if (!window.THREE) {
   setStatus("THREE failed to load.");
@@ -628,70 +624,6 @@ function handleFile(file) {
   reader.onload = () => loadXYZ(reader.result, file.name);
   reader.onerror = () => setStatus("Failed to read the file.");
   reader.readAsText(file);
-}
-
-function bindFileInput() {
-  const input = document.getElementById("file-input");
-  const button = document.getElementById("load-button");
-  if (!input) return false;
-  setStatus("Ready. File input bound.");
-  const checkSelection = () => {
-    const file = input.files?.[0];
-    if (file && file.name !== selectedFileName) {
-      selectedFile = file;
-      selectedFileName = file.name;
-      setStatus(`Selected ${file.name} (${file.size} bytes).`);
-      handleFile(file);
-    }
-  };
-  input.addEventListener("click", () => {
-    setStatus("Choose a file in the picker...");
-  });
-  input.addEventListener("focus", () => {
-    setTimeout(checkSelection, 50);
-  });
-  input.addEventListener("change", (event) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      setStatus("No file selected.");
-      return;
-    }
-    selectedFile = file;
-    selectedFileName = file.name;
-    handleFile(file);
-  });
-  input.addEventListener("input", (event) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      selectedFile = file;
-      selectedFileName = file.name;
-      setStatus(`Selected ${file.name} (${file.size} bytes).`);
-      handleFile(file);
-    }
-  });
-  if (button) {
-    button.addEventListener("click", () => {
-      const file = selectedFile || input.files?.[0];
-      if (!file) {
-        setStatus("No file selected. Tap Choose File first.");
-        return;
-      }
-      handleFile(file);
-    });
-  }
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) {
-      setTimeout(checkSelection, 50);
-    }
-  });
-  window.addEventListener("focus", () => {
-    setTimeout(checkSelection, 50);
-  });
-  return true;
-}
-
-if (!bindFileInput()) {
-  window.addEventListener("DOMContentLoaded", bindFileInput, { once: true });
 }
 
 if (bondToggle) {

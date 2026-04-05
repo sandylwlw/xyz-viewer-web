@@ -27,13 +27,6 @@
           <div class="brand-subtitle">Open .xyz files and explore in 3D</div>
         </div>
       </div>
-      <div class="file-picker">
-        <div class="file-picker-title">Open XYZ</div>
-        <div class="file-picker-row">
-          <input id="file-input" class="file-input-visible" type="file" />
-          <button class="file-load-button" id="load-button" type="button">Load</button>
-        </div>
-      </div>
     </header>
 
     <main class="stage">
@@ -43,8 +36,8 @@
       <section class="hud" id="hud">
         <div class="hud-title">Load an .xyz file</div>
         <div class="hud-text">
-          Tap “Open XYZ” to choose a file from the iPhone Files app. If selection fails on iOS, open the file in Files,
-          tap Share → “Open in Safari” (or “Copy to Safari”), then return here and select it from Recents.
+          Drag and drop an .xyz file onto the viewer. On iOS, open the file in Files, tap Share → “Open in Safari” (or
+          “Copy to Safari”), then return here and drop from Recents.
         </div>
         <div class="hud-tip">
           Gestures: one finger orbit, two fingers pan, pinch to zoom. Tap two atoms to measure. Enable Edit to move atoms.
@@ -111,7 +104,7 @@
       onload="window.__controlsLoaded=true;setBootStatus('OrbitControls loaded.')"
       onerror="document.getElementById('status').textContent='Failed to load OrbitControls.js'"
     ></script>
-    <script src="app.js?v=nonmodule-12"></script>
+    <script src="app.js?v=nonmodule-13"></script>
     <script>
       setTimeout(() => {
         if (window.__xyzViewerLegacyLoaded) return;
