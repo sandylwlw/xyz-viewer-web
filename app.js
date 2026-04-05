@@ -790,12 +790,20 @@ const groupTemplates = {
     anchorElement: "C",
     atoms: (() => {
       const radius = 1.4;
+      const hBond = 1.09;
       const atoms = [];
       const anchor = new THREE.Vector3(radius, 0, 0);
       for (let i = 1; i < 6; i += 1) {
         const angle = (i * Math.PI) / 3;
-        const pos = new THREE.Vector3(radius * Math.cos(angle), radius * Math.sin(angle), 0).sub(anchor);
+        const ringPos = new THREE.Vector3(radius * Math.cos(angle), radius * Math.sin(angle), 0);
+        const pos = ringPos.clone().sub(anchor);
         atoms.push({ element: "C", position: pos });
+        const hPos = ringPos
+          .clone()
+          .normalize()
+          .multiplyScalar(radius + hBond)
+          .sub(anchor);
+        atoms.push({ element: "H", position: hPos });
       }
       return atoms;
     })(),
