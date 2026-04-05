@@ -104,6 +104,7 @@
     box-shadow: 0 18px 30px rgba(15, 118, 110, 0.28);
     position: relative;
     overflow: hidden;
+    z-index: 3;
   }
 
   .xyzviewer-button:focus {
@@ -114,9 +115,14 @@
   .xyzviewer-input {
     position: absolute;
     inset: 0;
-    opacity: 0;
+    opacity: 0.01;
     cursor: pointer;
-    font-size: 0;
+    font-size: 16px;
+    z-index: 2;
+  }
+
+  .xyzviewer-button span {
+    pointer-events: none;
   }
 
   .xyzviewer-stage {
