@@ -66,7 +66,11 @@
           <input id="edit-toggle" type="checkbox" />
           <span>Edit mode</span>
         </label>
-        <div class="toolbox-hint">Edit mode: drag atoms to move, or drag a box to select.</div>
+        <label class="tool-toggle">
+          <input id="rotate-toggle" type="checkbox" />
+          <span>Rotate selection</span>
+        </label>
+        <div class="toolbox-hint">Edit mode: drag atoms to move, drag a box to select, enable Rotate to spin selection.</div>
       </section>
     </main>
 
@@ -102,7 +106,7 @@
       onload="window.__controlsLoaded=true;setBootStatus('OrbitControls loaded.')"
       onerror="document.getElementById('status').textContent='Failed to load OrbitControls.js'"
     ></script>
-    <script src="app.js?v=nonmodule-4"></script>
+    <script src="app.js?v=nonmodule-5"></script>
     <script>
       setTimeout(() => {
         if (window.__xyzViewerLegacyLoaded) return;

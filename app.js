@@ -15,6 +15,7 @@ const clearMeasureButton = document.getElementById("measure-clear");
 const snapshotButton = document.getElementById("snapshot-button");
 const bondToggle = document.getElementById("bond-toggle");
 const editToggle = document.getElementById("edit-toggle");
+const rotateToggle = document.getElementById("rotate-toggle");
 let selectedFile = null;
 let selectedFileName = "";
 
@@ -201,18 +202,24 @@ let distanceLine = null;
 let showBonds = true;
 let bondsSkipped = false;
 let editMode = false;
+let rotateMode = false;
 let draggingAtom = null;
 let dragOffset = null;
 let dragPlane = null;
 let dragGroup = null;
 let dragStartPoint = null;
 let dragInitialPositions = null;
+let rotatingSelection = false;
+let rotateCenter = null;
+let rotateStartAngle = 0;
+let rotateStartPositions = null;
 let bondsHiddenForDrag = false;
 let selecting = false;
 let selectStart = null;
 const raycaster = new THREE.Raycaster();
 const pointerNDC = new THREE.Vector2();
 const tempVec = new THREE.Vector3();
+const tempQuat = new THREE.Quaternion();
 
 const demoXYZ = `12
 Demo: formamide
@@ -543,6 +550,26 @@ function getScreenPosition(mesh) {
   };
 }
 
+function getSelectionCenter() {
+  if (!editSelection.length) return null;
+  const center = new THREE.Vector3();
+  editSelection.forEach((mesh) => {
+    center.add(mesh.position);
+  });
+  center.divideScalar(editSelection.length);
+  return center;
+}
+
+function getPointerAngle(clientX, clientY, centerWorld) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  const centerScreen = centerWorld.clone().project(camera);
+  const centerX = (centerScreen.x * 0.5 + 0.5) * rect.width;
+  const centerY = (-centerScreen.y * 0.5 + 0.5) * rect.height;
+  const px = clientX - rect.left;
+  const py = clientY - rect.top;
+  return Math.atan2(py - centerY, px - centerX);
+}
+
 function loadXYZ(contents, filename = "file.xyz") {
   clearMolecule();
   const atoms = parseXYZ(contents);
@@ -721,8 +748,25 @@ if (editToggle) {
       setStatus("Edit mode on. Drag to move, or drag a box to select.");
     } else {
       clearEditSelection();
+      rotateMode = false;
+      if (rotateToggle) rotateToggle.checked = false;
       setStatus("Edit mode off.");
     }
+  });
+}
+
+if (rotateToggle) {
+  rotateToggle.checked = rotateMode;
+  rotateToggle.addEventListener("change", () => {
+    rotateMode = rotateToggle.checked;
+    if (rotateMode && !editMode) {
+      editMode = true;
+      if (editToggle) editToggle.checked = true;
+      setStatus("Edit mode on. Rotate selection enabled.");
+      clearMeasurement();
+      return;
+    }
+    setStatus(rotateMode ? "Rotate selection enabled." : "Rotate selection disabled.");
   });
 }
 
@@ -837,6 +881,20 @@ renderer?.domElement.addEventListener(
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation?.();
+    if (rotateMode && editSelection.length) {
+      rotatingSelection = true;
+      rotateCenter = getSelectionCenter();
+      rotateStartAngle = getPointerAngle(event.clientX, event.clientY, rotateCenter);
+      rotateStartPositions = editSelection.map((mesh) => mesh.position.clone());
+      if (controls && controls.enabled !== undefined) {
+        controls.enabled = false;
+      }
+      if (bondGroup && bondGroup.visible) {
+        bondGroup.visible = false;
+        bondsHiddenForDrag = true;
+      }
+      return;
+    }
     if (hit) {
       if (!editSelection.includes(hit)) {
         setEditSelection([hit]);
@@ -884,6 +942,24 @@ renderer?.domElement.addEventListener(
   { capture: true }
 );
 renderer?.domElement.addEventListener("pointermove", (event) => {
+  if (rotatingSelection && rotateCenter && rotateStartPositions) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation?.();
+    const currentAngle = getPointerAngle(event.clientX, event.clientY, rotateCenter);
+    const deltaAngle = currentAngle - rotateStartAngle;
+    const axis = new THREE.Vector3();
+    camera.getWorldDirection(axis);
+    tempQuat.setFromAxisAngle(axis, deltaAngle);
+    editSelection.forEach((mesh, index) => {
+      const startPos = rotateStartPositions[index];
+      const offset = startPos.clone().sub(rotateCenter);
+      offset.applyQuaternion(tempQuat);
+      mesh.position.copy(rotateCenter).add(offset);
+    });
+    updateMeasurementLine();
+    return;
+  }
   if (dragGroup && dragPlane && dragStartPoint && dragInitialPositions) {
     event.preventDefault();
     event.stopPropagation();
@@ -924,6 +1000,22 @@ renderer?.domElement.addEventListener("pointermove", (event) => {
 });
 renderer?.domElement.addEventListener("pointerup", (event) => {
   if (!downPoint) return;
+  if (rotatingSelection) {
+    rotatingSelection = false;
+    rotateCenter = null;
+    rotateStartPositions = null;
+    if (controls && controls.enabled !== undefined) {
+      controls.enabled = true;
+    }
+    if (bondsHiddenForDrag && bondGroup && showBonds && !bondsSkipped) {
+      rebuildBonds(atomInfoList, bondGroup, isIOS ? 8 : 16);
+      bondGroup.visible = true;
+      bondsHiddenForDrag = false;
+    }
+    updateMeasurementLine();
+    downPoint = null;
+    return;
+  }
   if (dragGroup) {
     draggingAtom = null;
     dragPlane = null;
