@@ -69,7 +69,7 @@
           Edit mode: drag atoms to move, drag a box to select. Use Rotate molecule for whole view, Rotate selection for
           selected atoms.
         </div>
-        <button class="tool-button" id="export-button" type="button">Export XYZ</button>
+        <button class="tool-button" id="export-button" type="button">Export</button>
       </section>
     </main>
 
@@ -105,7 +105,7 @@
       onload="window.__controlsLoaded=true;setBootStatus('OrbitControls loaded.')"
       onerror="document.getElementById('status').textContent='Failed to load OrbitControls.js'"
     ></script>
-    <script src="app.js?v=nonmodule-19"></script>
+    <script src="app.js?v=nonmodule-20"></script>
     <script>
       setTimeout(() => {
         if (window.__xyzViewerLegacyLoaded) return;
