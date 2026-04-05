@@ -30,7 +30,7 @@
     </header>
 
     <main class="stage">
-      <canvas id="viewer"></canvas>
+      <canvas id="viewer" tabindex="0"></canvas>
       <div class="distance-label" id="distance-label"></div>
       <div class="selection-box" id="selection-box" aria-hidden="true"></div>
       <section class="hud" id="hud">
@@ -108,7 +108,7 @@
       onload="window.__controlsLoaded=true;setBootStatus('OrbitControls loaded.')"
       onerror="document.getElementById('status').textContent='Failed to load OrbitControls.js'"
     ></script>
-    <script src="app.js?v=nonmodule-26"></script>
+    <script src="app.js?v=nonmodule-27"></script>
     <script>
       setTimeout(() => {
         if (window.__xyzViewerLegacyLoaded) return;

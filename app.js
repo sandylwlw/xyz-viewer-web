@@ -958,6 +958,12 @@ if (renderer) {
   animate();
 }
 
+if (canvas) {
+  canvas.addEventListener("pointerdown", () => {
+    canvas.focus({ preventScroll: true });
+  });
+}
+
 renderer?.domElement.addEventListener(
   "touchstart",
   (event) => {

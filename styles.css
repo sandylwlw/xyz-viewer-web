@@ -157,6 +157,10 @@ body.pseudo-fullscreen .toolbox {
   touch-action: none;
 }
 
+#viewer:focus {
+  outline: none;
+}
+
 .distance-label {
   position: absolute;
   top: 0;
