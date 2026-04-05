@@ -221,6 +221,7 @@ const raycaster = new THREE.Raycaster();
 const pointerNDC = new THREE.Vector2();
 const tempVec = new THREE.Vector3();
 const tempQuat = new THREE.Quaternion();
+const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
 function syncControlsEnabled() {
   if (!controls || controls.enabled === undefined) return;
@@ -775,6 +776,15 @@ function updateFullscreenButton() {
 
 if (fullscreenButton) {
   fullscreenButton.addEventListener("click", () => {
+    if (isIOSDevice) {
+      if (isPseudoFullscreen()) {
+        setPseudoFullscreen(false);
+      } else {
+        setPseudoFullscreen(true);
+      }
+      updateFullscreenButton();
+      return;
+    }
     const requestFullscreenFn =
       document.documentElement.requestFullscreen ||
       document.documentElement.webkitRequestFullscreen ||
