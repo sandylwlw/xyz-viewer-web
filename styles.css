@@ -220,6 +220,23 @@ body {
   gap: 12px;
 }
 
+.toolbox-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
 .toolbox-title {
   font-size: 12px;
   font-weight: 600;
@@ -229,6 +246,17 @@ body {
 }
 
 .toolbox-toggle {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: white;
+  color: #0f172a;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.toolbox-action {
   border: 1px solid rgba(15, 23, 42, 0.12);
   background: white;
   color: #0f172a;
@@ -268,6 +296,10 @@ body {
 
 .toolbox.collapsed .tool-toggle,
 .toolbox.collapsed .toolbox-hint {
+  display: none;
+}
+
+.toolbox.collapsed .toolbox-action {
   display: none;
 }
 

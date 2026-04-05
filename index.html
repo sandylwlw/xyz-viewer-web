@@ -36,8 +36,8 @@
       <section class="hud" id="hud">
         <div class="hud-title">Load an .xyz file</div>
         <div class="hud-text">
-          Drag and drop an .xyz file onto the viewer. On iOS, open the file in Files, tap Share → “Open in Safari” (or
-          “Copy to Safari”), then return here and drop from Recents.
+          Drag and drop an .xyz file onto the viewer, or tap Choose File. On iOS, open the file in Files, tap Share →
+          “Open in Safari” (or “Copy to Safari”), then return here and pick from Recents.
         </div>
         <div class="hud-tip">
           Gestures: one finger orbit, two fingers pan, pinch to zoom. Tap two atoms to measure. Enable Edit to move atoms.
@@ -46,7 +46,11 @@
       <section class="toolbox" id="toolbox">
         <div class="toolbox-header">
           <div class="toolbox-title">Tools</div>
-          <button class="toolbox-toggle" id="toolbox-toggle" type="button">Hide</button>
+          <div class="toolbox-actions">
+            <input id="file-input" class="file-input-hidden" type="file" />
+            <button class="toolbox-action" id="file-picker-button" type="button">Choose File</button>
+            <button class="toolbox-toggle" id="toolbox-toggle" type="button">Hide</button>
+          </div>
         </div>
         <label class="tool-toggle">
           <input id="bond-toggle" type="checkbox" checked />
@@ -104,7 +108,7 @@
       onload="window.__controlsLoaded=true;setBootStatus('OrbitControls loaded.')"
       onerror="document.getElementById('status').textContent='Failed to load OrbitControls.js'"
     ></script>
-    <script src="app.js?v=nonmodule-13"></script>
+    <script src="app.js?v=nonmodule-14"></script>
     <script>
       setTimeout(() => {
         if (window.__xyzViewerLegacyLoaded) return;

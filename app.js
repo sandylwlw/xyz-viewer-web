@@ -4,6 +4,7 @@
 const canvas = document.getElementById("viewer");
 const statusEl = document.getElementById("status");
 const hudEl = document.getElementById("hud");
+const fileInput = document.getElementById("file-input");
 const distanceLabel = document.getElementById("distance-label");
 const selectionBoxEl = document.getElementById("selection-box");
 const stageEl = document.querySelector(".stage");
@@ -14,6 +15,7 @@ const rotateMoleculeToggle = document.getElementById("rotate-molecule-toggle");
 const rotateToggle = document.getElementById("rotate-toggle");
 const toolboxEl = document.getElementById("toolbox");
 const toolboxToggle = document.getElementById("toolbox-toggle");
+const filePickerButton = document.getElementById("file-picker-button");
 
 if (!window.THREE) {
   setStatus("THREE failed to load.");
@@ -710,6 +712,21 @@ if (toolboxToggle && toolboxEl) {
 
 if (exportButton) {
   exportButton.addEventListener("click", exportXYZ);
+}
+
+if (filePickerButton && fileInput) {
+  filePickerButton.addEventListener("click", () => {
+    fileInput.click();
+  });
+}
+
+if (fileInput) {
+  fileInput.addEventListener("change", (event) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleFile(file);
+    }
+  });
 }
 
 window.addEventListener("keydown", (event) => {
