@@ -526,6 +526,9 @@ function undoMove() {
     const anchorInfo = atomInfoList[snapshot.anchorIndex];
     if (anchorInfo) {
       anchorInfo.element = snapshot.anchorElement;
+      if (snapshot.anchorPosition) {
+        anchorInfo.mesh.position.copy(snapshot.anchorPosition);
+      }
       applyAtomStyle(anchorInfo.mesh, anchorInfo.element);
     }
   } else {
@@ -721,6 +724,28 @@ function createAtomMesh(element, position) {
   return mesh;
 }
 
+const bondLengthMap = {
+  "C-H": 1.09,
+  "H-C": 1.09,
+  "N-H": 1.03,
+  "H-N": 1.03,
+  "O-H": 0.98,
+  "H-O": 0.98,
+  "C-C": 1.54,
+  "C-N": 1.47,
+  "N-C": 1.47,
+  "C-O": 1.43,
+  "O-C": 1.43,
+};
+
+function getBondLength(elementA, elementB) {
+  const key = `${elementA}-${elementB}`;
+  if (bondLengthMap[key]) return bondLengthMap[key];
+  const ra = covalentRadii[elementA] ?? 0.9;
+  const rb = covalentRadii[elementB] ?? 0.9;
+  return (ra + rb) * 1.1;
+}
+
 const groupTemplates = {
   H: { anchorElement: "H", atoms: [] },
   OH: {
@@ -730,7 +755,7 @@ const groupTemplates = {
   NH2: {
     anchorElement: "N",
     atoms: (() => {
-      const bond = 1.02;
+      const bond = 1.03;
       const theta = (107 * Math.PI) / 360;
       return [
         { element: "H", position: new THREE.Vector3(Math.sin(theta), 0, Math.cos(theta)).multiplyScalar(bond) },
@@ -757,8 +782,8 @@ const groupTemplates = {
     anchorElement: "C",
     atoms: [
       { element: "O", position: new THREE.Vector3(0, 0, 1.23) },
-      { element: "O", position: new THREE.Vector3(1.2, 0, -0.3) },
-      { element: "H", position: new THREE.Vector3(1.2, 0, 0.67) },
+      { element: "O", position: new THREE.Vector3(1.36, 0, -0.2) },
+      { element: "H", position: new THREE.Vector3(1.36, 0, 0.78) },
     ],
   },
   Ph: {
@@ -766,12 +791,11 @@ const groupTemplates = {
     atoms: (() => {
       const radius = 1.4;
       const atoms = [];
+      const anchor = new THREE.Vector3(radius, 0, 0);
       for (let i = 1; i < 6; i += 1) {
         const angle = (i * Math.PI) / 3;
-        atoms.push({
-          element: "C",
-          position: new THREE.Vector3(radius * Math.cos(angle), radius * Math.sin(angle), 0),
-        });
+        const pos = new THREE.Vector3(radius * Math.cos(angle), radius * Math.sin(angle), 0).sub(anchor);
+        atoms.push({ element: "C", position: pos });
       }
       return atoms;
     })(),
@@ -781,12 +805,11 @@ const groupTemplates = {
     atoms: (() => {
       const radius = 1.54;
       const atoms = [];
+      const anchor = new THREE.Vector3(radius, 0, 0);
       for (let i = 1; i < 6; i += 1) {
         const angle = (i * Math.PI) / 3;
-        atoms.push({
-          element: "C",
-          position: new THREE.Vector3(radius * Math.cos(angle), radius * Math.sin(angle), 0),
-        });
+        const pos = new THREE.Vector3(radius * Math.cos(angle), radius * Math.sin(angle), 0).sub(anchor);
+        atoms.push({ element: "C", position: pos });
       }
       return atoms;
     })(),
@@ -794,19 +817,89 @@ const groupTemplates = {
   Cyclopentyl: {
     anchorElement: "C",
     atoms: (() => {
-      const radius = 1.5;
+      const radius = 1.54;
       const atoms = [];
+      const anchor = new THREE.Vector3(radius, 0, 0);
       for (let i = 1; i < 5; i += 1) {
         const angle = (i * 2 * Math.PI) / 5;
-        atoms.push({
-          element: "C",
-          position: new THREE.Vector3(radius * Math.cos(angle), radius * Math.sin(angle), 0),
-        });
+        const pos = new THREE.Vector3(radius * Math.cos(angle), radius * Math.sin(angle), 0).sub(anchor);
+        atoms.push({ element: "C", position: pos });
       }
       return atoms;
     })(),
   },
 };
+
+function computeNeighborDirection(anchorIndex) {
+  const anchorPos = atomInfoList[anchorIndex].mesh.position;
+  const neighbors = atomInfoList
+    .map((info, idx) => ({ idx, mesh: info.mesh }))
+    .filter((item) => item.idx !== anchorIndex)
+    .map((item) => ({
+      idx: item.idx,
+      distance: item.mesh.position.distanceTo(anchorPos),
+    }))
+    .sort((a, b) => a.distance - b.distance);
+  const nearest = neighbors[0];
+  if (!nearest) {
+    return {
+      direction: camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(-1).normalize(),
+      neighborIndex: null,
+      neighborCount: 0,
+      neighborIndices: [],
+    };
+  }
+  const direction = anchorPos.clone().sub(atomInfoList[nearest.idx].mesh.position).normalize();
+  const neighborIndices = neighbors.slice(0, 3).map((item) => item.idx);
+  return { direction, neighborIndex: nearest.idx, neighborCount: neighborIndices.length, neighborIndices };
+}
+
+function computeNeighborPlaneNormal(anchorIndex, neighborIndices) {
+  if (neighborIndices.length < 2) return null;
+  const anchorPos = atomInfoList[anchorIndex].mesh.position;
+  const v1 = atomInfoList[neighborIndices[0]].mesh.position.clone().sub(anchorPos).normalize();
+  let normal = null;
+  for (let i = 1; i < neighborIndices.length; i += 1) {
+    const v2 = atomInfoList[neighborIndices[i]].mesh.position.clone().sub(anchorPos).normalize();
+    const cross = v1.clone().cross(v2);
+    if (cross.length() > 1e-3) {
+      normal = cross.normalize();
+      break;
+    }
+  }
+  return normal;
+}
+
+function evaluatePlacement(templateAtoms, anchorPos, rotation, anchorIndex) {
+  let collisions = 0;
+  let minDistance = Infinity;
+  const rotatedPositions = templateAtoms.map((atom) =>
+    atom.position.clone().applyQuaternion(rotation).add(anchorPos)
+  );
+  rotatedPositions.forEach((pos) => {
+    atomInfoList.forEach((info, idx) => {
+      if (idx === anchorIndex) return;
+      const distance = pos.distanceTo(info.mesh.position);
+      if (distance < minDistance) minDistance = distance;
+      if (distance < 0.8) collisions += 1;
+    });
+  });
+  return { collisions, minDistance, rotatedPositions };
+}
+
+function findBestRotation(templateAtoms, baseQuat, axis, anchorPos, anchorIndex) {
+  let best = null;
+  for (let i = 0; i < 12; i += 1) {
+    const angle = (i * Math.PI) / 6;
+    const spin = new THREE.Quaternion().setFromAxisAngle(axis, angle);
+    const rotation = spin.multiply(baseQuat.clone());
+    const score = evaluatePlacement(templateAtoms, anchorPos, rotation, anchorIndex);
+    if (!best || score.collisions < best.collisions || (score.collisions === best.collisions && score.minDistance > best.minDistance)) {
+      best = { rotation, positions: score.rotatedPositions, collisions: score.collisions, minDistance: score.minDistance };
+    }
+  }
+  return best;
+}
 
 function addGroupAtAtom(mesh) {
   if (!moleculeGroup || !atomInfoList.length) {
@@ -818,30 +911,46 @@ function addGroupAtAtom(mesh) {
   if (anchorIndex < 0) return;
   const anchorInfo = atomInfoList[anchorIndex];
   const prevElement = anchorInfo.element;
+  const prevPosition = anchorInfo.mesh.position.clone();
   anchorInfo.element = template.anchorElement;
   applyAtomStyle(anchorInfo.mesh, anchorInfo.element);
+  const neighborData = computeNeighborDirection(anchorIndex);
+  const neighborIndex = neighborData.neighborIndex;
+  const direction = neighborData.direction;
 
-  const neighbors = atomInfoList
-    .map((info, idx) => ({ info, idx }))
-    .filter((item) => item.info.mesh !== mesh)
-    .map((item) => ({
-      idx: item.idx,
-      distance: item.info.mesh.position.distanceTo(mesh.position),
-    }))
-    .sort((a, b) => a.distance - b.distance);
-  const neighbor = neighbors[0];
-  const direction = neighbor
-    ? mesh.position.clone().sub(atomInfoList[neighbor.idx].mesh.position).normalize()
-    : camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(-1).normalize();
-  const alignQuat = new THREE.Quaternion().setFromUnitVectors(
-    new THREE.Vector3(0, 0, 1),
-    direction
-  );
+  if (neighborIndex !== null) {
+    const targetLength = selectedGroupType === "Ph" ? 1.5 : getBondLength(anchorInfo.element, atomInfoList[neighborIndex].element);
+    const newPos = atomInfoList[neighborIndex].mesh.position.clone().add(direction.clone().multiplyScalar(targetLength));
+    anchorInfo.mesh.position.copy(newPos);
+  }
+
+  const isRing = ["Ph", "Cyclohexyl", "Cyclopentyl"].includes(selectedGroupType);
+  let normal = null;
+  if (isRing) {
+    if (neighborData.neighborCount >= 2) {
+      normal = computeNeighborPlaneNormal(anchorIndex, neighborData.neighborIndices);
+    }
+    if (!normal) {
+      const axis = Math.abs(direction.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
+      normal = direction.clone().cross(axis).normalize();
+      if (normal.length() < 1e-3) {
+        normal = direction.clone().cross(new THREE.Vector3(0, 0, 1)).normalize();
+      }
+    }
+  }
+
+  const baseQuat = isRing && normal
+    ? new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal)
+    : new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), direction);
+
+  const axis = isRing && normal ? normal.clone() : direction.clone();
+  const anchorPos = anchorInfo.mesh.position;
+  const best = findBestRotation(template.atoms, baseQuat, axis, anchorPos, anchorIndex);
 
   const added = [];
-  template.atoms.forEach((atom) => {
-    const pos = atom.position.clone().applyQuaternion(alignQuat).add(mesh.position);
-    const atomMesh = createAtomMesh(atom.element, pos);
+  const positions = best?.positions || template.atoms.map((atom) => atom.position.clone().applyQuaternion(baseQuat).add(anchorPos));
+  template.atoms.forEach((atom, idx) => {
+    const atomMesh = createAtomMesh(atom.element, positions[idx]);
     moleculeGroup.add(atomMesh);
     const info = { mesh: atomMesh, radius: covalentRadii[atom.element] ?? 0.9, element: atom.element };
     atomInfoList.push(info);
@@ -857,6 +966,7 @@ function addGroupAtAtom(mesh) {
     type: "add-group",
     anchorIndex,
     anchorElement: prevElement,
+    anchorPosition: prevPosition,
     added,
   });
   setStatus(`Added ${selectedGroupType}.`);
