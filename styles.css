@@ -296,6 +296,8 @@ body {
     position: static;
     margin: 18px;
     max-width: none;
+    max-height: 50vh;
+    overflow-y: auto;
   }
 
   .footer {
