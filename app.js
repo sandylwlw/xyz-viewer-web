@@ -11,6 +11,7 @@ const selectionBoxEl = document.getElementById("selection-box");
 const stageEl = document.querySelector(".stage");
 const bondToggle = document.getElementById("bond-toggle");
 const editToggle = document.getElementById("edit-toggle");
+const exportButton = document.getElementById("export-button");
 const rotateMoleculeToggle = document.getElementById("rotate-molecule-toggle");
 const rotateToggle = document.getElementById("rotate-toggle");
 const toolboxEl = document.getElementById("toolbox");
@@ -593,6 +594,33 @@ function loadXYZ(contents, filename = "file.xyz") {
   }
 }
 
+function exportXYZ() {
+  if (!atomInfoList.length) {
+    setStatus("No atoms to export.");
+    return;
+  }
+  const lines = [];
+  lines.push(String(atomInfoList.length));
+  lines.push("Exported from XYZ Viewer");
+  atomInfoList.forEach((atom) => {
+    const { element, mesh } = atom;
+    const pos = mesh.position;
+    lines.push(
+      `${element} ${pos.x.toFixed(6)} ${pos.y.toFixed(6)} ${pos.z.toFixed(6)}`
+    );
+  });
+  const blob = new Blob([`${lines.join("\n")}\n`], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "export.xyz";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  setStatus("Exported XYZ file.");
+}
+
 function handleFile(file) {
   if (!file) return;
   setStatus(`Reading ${file.name} (${file.size} bytes)...`);
@@ -746,6 +774,10 @@ if (toolboxToggle && toolboxEl) {
     const collapsed = toolboxEl.classList.toggle("collapsed");
     toolboxToggle.textContent = collapsed ? "Show" : "Hide";
   });
+}
+
+if (exportButton) {
+  exportButton.addEventListener("click", exportXYZ);
 }
 
 window.addEventListener("keydown", (event) => {

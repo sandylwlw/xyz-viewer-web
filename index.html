@@ -63,6 +63,7 @@
           <input id="edit-toggle" type="checkbox" />
           <span>Edit mode</span>
         </label>
+        <button class="tool-button" id="export-button" type="button">Export XYZ</button>
         <label class="tool-toggle">
           <input id="rotate-molecule-toggle" type="checkbox" />
           <span>Rotate molecule</span>
@@ -110,7 +111,7 @@
       onload="window.__controlsLoaded=true;setBootStatus('OrbitControls loaded.')"
       onerror="document.getElementById('status').textContent='Failed to load OrbitControls.js'"
     ></script>
-    <script src="app.js?v=nonmodule-11"></script>
+    <script src="app.js?v=nonmodule-12"></script>
     <script>
       setTimeout(() => {
         if (window.__xyzViewerLegacyLoaded) return;
