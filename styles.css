@@ -370,6 +370,12 @@ body.pseudo-fullscreen .toolbox {
   box-shadow: 0 14px 24px rgba(15, 118, 110, 0.2);
 }
 
+.mobile-toggle.active::before {
+  content: "✓";
+  margin-right: 6px;
+  font-weight: 700;
+}
+
 .group-adder {
   display: flex;
   flex-direction: column;
@@ -526,7 +532,7 @@ body.pseudo-fullscreen .toolbox {
 
   .mobile-controls {
     position: fixed;
-    top: 12px;
+    top: 24px;
     left: 12px;
     display: flex;
     flex-direction: column;
