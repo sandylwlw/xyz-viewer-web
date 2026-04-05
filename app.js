@@ -40,8 +40,78 @@ if (renderer) {
   }
 }
 
-const controls = renderer ? new OrbitControls(camera, renderer.domElement) : null;
-if (controls) {
+function createFallbackControls(cameraInstance, domElement) {
+  const target = new THREE.Vector3(0, 0, 0);
+  const spherical = new THREE.Spherical();
+  const pointer = { x: 0, y: 0, active: false };
+
+  const updateSpherical = () => {
+    const offset = new THREE.Vector3().subVectors(cameraInstance.position, target);
+    spherical.setFromVector3(offset);
+  };
+
+  const applySpherical = () => {
+    const offset = new THREE.Vector3().setFromSpherical(spherical);
+    cameraInstance.position.copy(target).add(offset);
+    cameraInstance.lookAt(target);
+  };
+
+  updateSpherical();
+
+  const rotate = (dx, dy) => {
+    spherical.theta -= dx * 0.005;
+    spherical.phi -= dy * 0.005;
+    spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+    applySpherical();
+  };
+
+  const zoom = (delta) => {
+    const factor = 1 + delta * 0.0015;
+    spherical.radius = Math.max(2, Math.min(600, spherical.radius * factor));
+    applySpherical();
+  };
+
+  domElement.addEventListener("pointerdown", (event) => {
+    pointer.active = true;
+    pointer.x = event.clientX;
+    pointer.y = event.clientY;
+    domElement.setPointerCapture?.(event.pointerId);
+  });
+
+  domElement.addEventListener("pointermove", (event) => {
+    if (!pointer.active) return;
+    rotate(event.clientX - pointer.x, event.clientY - pointer.y);
+    pointer.x = event.clientX;
+    pointer.y = event.clientY;
+  });
+
+  domElement.addEventListener("pointerup", (event) => {
+    pointer.active = false;
+    domElement.releasePointerCapture?.(event.pointerId);
+  });
+
+  domElement.addEventListener(
+    "wheel",
+    (event) => {
+      event.preventDefault();
+      zoom(event.deltaY);
+    },
+    { passive: false }
+  );
+
+  return {
+    target,
+    update: () => {},
+  };
+}
+
+const controls = renderer
+  ? THREE.OrbitControls
+    ? new OrbitControls(camera, renderer.domElement)
+    : createFallbackControls(camera, renderer.domElement)
+  : null;
+
+if (controls && controls.enableDamping !== undefined) {
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
   controls.minDistance = 5;
