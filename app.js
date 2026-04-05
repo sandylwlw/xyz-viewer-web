@@ -1,4 +1,5 @@
-window.__xyzViewerInitDone = false;
+(() => {
+  window.__xyzViewerInitDone = false;
 
 const canvas = document.getElementById("viewer");
 const statusEl = document.getElementById("status");
@@ -859,3 +860,4 @@ renderer?.domElement.addEventListener("touchend", (event) => {
     }
   }
 });
+})();
