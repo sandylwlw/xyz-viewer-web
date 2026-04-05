@@ -196,6 +196,7 @@ scene.add(fillLight);
 
 let moleculeGroup = null;
 let bondGroup = null;
+let atomGroupRef = null;
 let atomMeshList = [];
 let atomInfoList = [];
 let selectedAtoms = [];
@@ -358,6 +359,7 @@ function buildMolecule(atoms) {
   group.add(atomGroup);
   group.add(bondGroupLocal);
   bondGroup = bondGroupLocal;
+  atomGroupRef = atomGroup;
   atomMeshList = atomMeshes.map((item) => item.mesh);
   atomInfoList = atomMeshes;
   return group;
@@ -428,6 +430,7 @@ function clearMolecule() {
   });
   moleculeGroup = null;
   bondGroup = null;
+  atomGroupRef = null;
   atomMeshList = [];
   atomInfoList = [];
   clearMeasurement();
@@ -518,7 +521,7 @@ function undoMove() {
   }
   if (snapshot.type === "add-group") {
     snapshot.added.forEach((info) => {
-      moleculeGroup.remove(info.mesh);
+      info.mesh.parent?.remove(info.mesh);
       info.mesh.geometry?.dispose();
       info.mesh.material?.dispose();
     });
@@ -537,7 +540,11 @@ function undoMove() {
     const restored = snapshot.removed || [];
     restored.forEach((item) => {
       const atomMesh = createAtomMesh(item.element, item.position);
-      moleculeGroup.add(atomMesh);
+      if (atomGroupRef) {
+        atomGroupRef.add(atomMesh);
+      } else {
+        moleculeGroup.add(atomMesh);
+      }
       const info = { mesh: atomMesh, radius: item.radius ?? (covalentRadii[item.element] ?? 0.9), element: item.element };
       atomInfoList.push(info);
       atomMeshList.push(atomMesh);
@@ -586,7 +593,8 @@ function deleteSelectedAtoms() {
   atomInfoList = atomInfoList.filter((info) => !removedInfos.some((item) => item.mesh === info.mesh));
   atomMeshList = atomInfoList.map((info) => info.mesh);
   const meshesToRemove = [];
-  moleculeGroup.traverse((child) => {
+  const atomRoot = atomGroupRef || moleculeGroup;
+  atomRoot.traverse((child) => {
     if (!child.isMesh) return;
     if (child.geometry?.type !== "SphereGeometry") return;
     if (atomMeshList.includes(child)) return;
@@ -1202,7 +1210,11 @@ function addGroupAtAtom(mesh) {
   const positions = best?.positions || templateAtoms.map((atom) => atom.position.clone().applyQuaternion(baseQuat).add(anchorPos));
   templateAtoms.forEach((atom, idx) => {
     const atomMesh = createAtomMesh(atom.element, positions[idx]);
-    moleculeGroup.add(atomMesh);
+    if (atomGroupRef) {
+      atomGroupRef.add(atomMesh);
+    } else {
+      moleculeGroup.add(atomMesh);
+    }
     const info = { mesh: atomMesh, radius: covalentRadii[atom.element] ?? 0.9, element: atom.element };
     atomInfoList.push(info);
     atomMeshList.push(atomMesh);
