@@ -579,19 +579,24 @@ function deleteSelectedAtoms() {
   });
   if (!removedInfos.length) return;
   removedInfos.forEach((info) => {
-    moleculeGroup.remove(info.mesh);
+    info.mesh.parent?.remove(info.mesh);
     info.mesh.geometry?.dispose();
     info.mesh.material?.dispose();
   });
   atomInfoList = atomInfoList.filter((info) => !removedInfos.some((item) => item.mesh === info.mesh));
   atomMeshList = atomInfoList.map((info) => info.mesh);
-  moleculeGroup.children
-    .filter((child) => child.isMesh && !atomMeshList.includes(child) && child.geometry?.type === "SphereGeometry")
-    .forEach((child) => {
-      moleculeGroup.remove(child);
-      child.geometry?.dispose();
-      child.material?.dispose();
-    });
+  const meshesToRemove = [];
+  moleculeGroup.traverse((child) => {
+    if (!child.isMesh) return;
+    if (child.geometry?.type !== "SphereGeometry") return;
+    if (atomMeshList.includes(child)) return;
+    meshesToRemove.push(child);
+  });
+  meshesToRemove.forEach((child) => {
+    child.parent?.remove(child);
+    child.geometry?.dispose();
+    child.material?.dispose();
+  });
   clearEditSelection();
   clearMeasurement();
   if (bondGroup && showBonds && !bondsSkipped) {
