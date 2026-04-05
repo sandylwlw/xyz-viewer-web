@@ -1408,7 +1408,7 @@ if (groupSelectMobile) {
 
 if (addGroupMobile) {
   addGroupMobile.addEventListener("click", () => {
-    setAddGroupMode(!addGroupMode);
+    setAddGroupMode(false);
   });
 }
 
