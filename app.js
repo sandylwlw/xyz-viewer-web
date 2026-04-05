@@ -1012,7 +1012,7 @@ function addGroupAtAtom(mesh) {
   if (selectedGroupType === "OH") {
     const bond = 0.98;
     const theta = (104.5 * Math.PI) / 180;
-    const targetDir = direction.clone();
+    const targetDir = direction.clone().negate();
     baseQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), targetDir);
     axis = targetDir.clone();
     templateAtoms = [
