@@ -502,12 +502,6 @@ body.pseudo-fullscreen .toolbox {
   }
 
 
-  #file-picker-button {
-    position: fixed;
-    top: 24px;
-    right: 12px;
-    z-index: 6;
-  }
 
   .group-drawer {
     position: fixed;
