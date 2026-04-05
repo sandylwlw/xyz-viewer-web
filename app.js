@@ -7,6 +7,7 @@ const hudEl = document.getElementById("hud");
 const fileInput = document.getElementById("file-input");
 const loadButton = document.getElementById("load-button");
 let selectedFile = null;
+let selectedFileName = "";
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xfaf7f1);
@@ -251,6 +252,18 @@ function bindFileInput() {
   const input = document.getElementById("file-input");
   const button = document.getElementById("load-button");
   if (!input) return false;
+  setStatus("Ready. File input bound.");
+  input.addEventListener("click", () => {
+    setStatus("Choose a file in the picker...");
+  });
+  input.addEventListener("focus", () => {
+    const file = input.files?.[0];
+    if (file && file.name !== selectedFileName) {
+      selectedFile = file;
+      selectedFileName = file.name;
+      setStatus(`Selected ${file.name} (${file.size} bytes). Tap Load if needed.`);
+    }
+  });
   input.addEventListener("change", (event) => {
     const file = event.target.files?.[0];
     if (!file) {
@@ -258,12 +271,14 @@ function bindFileInput() {
       return;
     }
     selectedFile = file;
+    selectedFileName = file.name;
     handleFile(file);
   });
   input.addEventListener("input", (event) => {
     const file = event.target.files?.[0];
     if (file) {
       selectedFile = file;
+      selectedFileName = file.name;
       setStatus(`Selected ${file.name} (${file.size} bytes). Tap Load if needed.`);
     }
   });
