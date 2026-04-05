@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
 import { OrbitControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js";
 
-window.__xyzViewerLoaded = true;
+window.__xyzViewerInitDone = false;
 
 const canvas = document.getElementById("viewer");
 const statusEl = document.getElementById("status");
@@ -313,6 +313,9 @@ function bindFileInput() {
 if (!bindFileInput()) {
   window.addEventListener("DOMContentLoaded", bindFileInput, { once: true });
 }
+
+window.__xyzViewerInitDone = true;
+window.__xyzViewerLoaded = true;
 
 
 window.addEventListener("dragover", (event) => {

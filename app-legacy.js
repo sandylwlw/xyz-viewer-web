@@ -1,6 +1,6 @@
 /* global THREE */
 
-if (!window.__xyzViewerLoaded) {
+if (!window.__xyzViewerInitDone) {
   const statusNode = document.getElementById("status");
   if (!window.THREE) {
     if (statusNode) {
@@ -380,4 +380,6 @@ function animate() {
 if (renderer) {
   animate();
 }
+  window.__xyzViewerInitDone = true;
+  window.__xyzViewerLoaded = true;
 }
