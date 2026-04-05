@@ -16,6 +16,7 @@ const rotateToggle = document.getElementById("rotate-toggle");
 const toolboxEl = document.getElementById("toolbox");
 const toolboxToggle = document.getElementById("toolbox-toggle");
 const filePickerButton = document.getElementById("file-picker-button");
+const fullscreenButton = document.getElementById("fullscreen-button");
 
 if (!window.THREE) {
   setStatus("THREE failed to load.");
@@ -727,6 +728,54 @@ if (fileInput) {
       handleFile(file);
     }
   });
+}
+
+function isFullscreen() {
+  return !!(
+    document.fullscreenElement ||
+    document.webkitFullscreenElement ||
+    document.mozFullScreenElement ||
+    document.msFullscreenElement
+  );
+}
+
+function requestFullscreen(target) {
+  const el = target || document.documentElement;
+  return (
+    el.requestFullscreen?.() ||
+    el.webkitRequestFullscreen?.() ||
+    el.mozRequestFullScreen?.() ||
+    el.msRequestFullscreen?.()
+  );
+}
+
+function exitFullscreen() {
+  return (
+    document.exitFullscreen?.() ||
+    document.webkitExitFullscreen?.() ||
+    document.mozCancelFullScreen?.() ||
+    document.msExitFullscreen?.()
+  );
+}
+
+function updateFullscreenButton() {
+  if (!fullscreenButton) return;
+  fullscreenButton.textContent = isFullscreen() ? "Exit full screen" : "Full screen";
+}
+
+if (fullscreenButton) {
+  fullscreenButton.addEventListener("click", () => {
+    if (isFullscreen()) {
+      exitFullscreen();
+    } else {
+      requestFullscreen(document.documentElement);
+    }
+  });
+  document.addEventListener("fullscreenchange", updateFullscreenButton);
+  document.addEventListener("webkitfullscreenchange", updateFullscreenButton);
+  document.addEventListener("mozfullscreenchange", updateFullscreenButton);
+  document.addEventListener("MSFullscreenChange", updateFullscreenButton);
+  updateFullscreenButton();
 }
 
 window.addEventListener("keydown", (event) => {
