@@ -266,16 +266,20 @@ function bindFileInput() {
   const button = document.getElementById("load-button");
   if (!input) return false;
   setStatus("Ready. File input bound.");
-  input.addEventListener("click", () => {
-    setStatus("Choose a file in the picker...");
-  });
-  input.addEventListener("focus", () => {
+  const checkSelection = () => {
     const file = input.files?.[0];
     if (file && file.name !== selectedFileName) {
       selectedFile = file;
       selectedFileName = file.name;
-      setStatus(`Selected ${file.name} (${file.size} bytes). Tap Load if needed.`);
+      setStatus(`Selected ${file.name} (${file.size} bytes).`);
+      handleFile(file);
     }
+  };
+  input.addEventListener("click", () => {
+    setStatus("Choose a file in the picker...");
+  });
+  input.addEventListener("focus", () => {
+    setTimeout(checkSelection, 50);
   });
   input.addEventListener("change", (event) => {
     const file = event.target.files?.[0];
@@ -292,7 +296,8 @@ function bindFileInput() {
     if (file) {
       selectedFile = file;
       selectedFileName = file.name;
-      setStatus(`Selected ${file.name} (${file.size} bytes). Tap Load if needed.`);
+      setStatus(`Selected ${file.name} (${file.size} bytes).`);
+      handleFile(file);
     }
   });
   if (button) {
@@ -305,6 +310,14 @@ function bindFileInput() {
       handleFile(file);
     });
   }
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      setTimeout(checkSelection, 50);
+    }
+  });
+  window.addEventListener("focus", () => {
+    setTimeout(checkSelection, 50);
+  });
   return true;
 }
 
