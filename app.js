@@ -224,7 +224,17 @@ const tempQuat = new THREE.Quaternion();
 
 function syncControlsEnabled() {
   if (!controls || controls.enabled === undefined) return;
-  controls.enabled = rotateMoleculeMode || !editMode;
+  const allowOrbit = rotateMoleculeMode || !editMode;
+  controls.enabled = allowOrbit;
+  if (controls.enableRotate !== undefined) {
+    controls.enableRotate = allowOrbit;
+  }
+  if (controls.enablePan !== undefined) {
+    controls.enablePan = allowOrbit;
+  }
+  if (controls.enableZoom !== undefined) {
+    controls.enableZoom = allowOrbit;
+  }
 }
 
 const elementColors = {
@@ -818,6 +828,30 @@ function animate() {
 if (renderer) {
   animate();
 }
+
+renderer?.domElement.addEventListener(
+  "touchstart",
+  (event) => {
+    if (editMode && !rotateMoleculeMode) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+    }
+  },
+  { passive: false, capture: true }
+);
+
+renderer?.domElement.addEventListener(
+  "touchmove",
+  (event) => {
+    if (editMode && !rotateMoleculeMode) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+    }
+  },
+  { passive: false, capture: true }
+);
 
 let downPoint = null;
 renderer?.domElement.addEventListener(
