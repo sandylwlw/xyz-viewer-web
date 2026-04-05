@@ -385,6 +385,43 @@ body.pseudo-fullscreen .toolbox {
   background: white;
 }
 
+.group-drawer {
+  display: none;
+}
+
+.group-drawer-toggle {
+  width: 100%;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: white;
+  color: #0f172a;
+  padding: 12px 14px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 12px 20px rgba(15, 23, 42, 0.08);
+}
+
+.group-drawer-panel {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--panel-border);
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.12);
+  display: none;
+}
+
+.group-drawer.active .group-drawer-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.group-drawer-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
 
 .toolbox.collapsed {
   opacity: 0.7;
@@ -461,6 +498,15 @@ body.pseudo-fullscreen .toolbox {
 
   .group-adder {
     display: none;
+  }
+
+  .group-drawer {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 96px;
+    display: block;
+    z-index: 4;
   }
 
 

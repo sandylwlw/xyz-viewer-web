@@ -20,6 +20,12 @@ const fullscreenButton = document.getElementById("fullscreen-button");
 const groupSelect = document.getElementById("group-select");
 const addGroupButton = document.getElementById("add-group-button");
 const deleteButton = document.getElementById("delete-button");
+const groupDrawer = document.getElementById("group-drawer");
+const groupDrawerToggle = document.getElementById("group-drawer-toggle");
+const groupDrawerPanel = document.getElementById("group-drawer-panel");
+const groupSelectMobile = document.getElementById("group-select-mobile");
+const addGroupMobile = document.getElementById("add-group-mobile");
+const cancelGroupMobile = document.getElementById("cancel-group-mobile");
 
 if (!window.THREE) {
   setStatus("THREE failed to load.");
@@ -615,6 +621,32 @@ function deleteSelectedAtoms() {
   setStatus(`Deleted ${removedInfos.length} atoms.`);
 }
 
+function setAddGroupMode(enabled, source = "desktop") {
+  addGroupMode = enabled;
+  addGroupButton?.classList.toggle("active", addGroupMode);
+  if (groupDrawer) {
+    groupDrawer.classList.toggle("active", addGroupMode);
+    groupDrawer.setAttribute("aria-hidden", addGroupMode ? "false" : "true");
+  }
+  if (addGroupMode) {
+    if (!editMode) {
+      editMode = true;
+      if (editToggle) editToggle.checked = true;
+    }
+    rotateMoleculeMode = false;
+    if (rotateMoleculeToggle) rotateMoleculeToggle.checked = false;
+    controls && controls.enabled !== undefined && (controls.enabled = false);
+    setStatus(`Click an atom to replace with ${selectedGroupType}.`);
+  } else {
+    syncControlsEnabled();
+    if (source === "mobile") {
+      groupDrawer?.classList.remove("active");
+      groupDrawer?.setAttribute("aria-hidden", "true");
+    }
+    setStatus("Add group cancelled.");
+  }
+}
+
 function updateDistanceLabel() {
   if (!distanceLine || !distanceLabel || !moleculeGroup) return;
   const positions = distanceLine.geometry.attributes.position.array;
@@ -1002,6 +1034,7 @@ function addGroupAtAtom(mesh) {
     setStatus("Load a molecule first.");
     return;
   }
+  addGroupMode = false;
   const template = groupTemplates[selectedGroupType] || groupTemplates.H;
   const anchorIndex = atomInfoList.findIndex((info) => info.mesh === mesh);
   if (anchorIndex < 0) return;
@@ -1345,25 +1378,43 @@ if (fileInput) {
 if (groupSelect) {
   groupSelect.addEventListener("change", () => {
     selectedGroupType = groupSelect.value;
+    if (groupSelectMobile) {
+      groupSelectMobile.value = selectedGroupType;
+    }
   });
 }
 
 if (addGroupButton) {
   addGroupButton.addEventListener("click", () => {
-    addGroupMode = !addGroupMode;
-    addGroupButton.classList.toggle("active", addGroupMode);
-    if (addGroupMode) {
-      if (!editMode) {
-        editMode = true;
-        if (editToggle) editToggle.checked = true;
-        syncControlsEnabled();
-      }
-      rotateMoleculeMode = false;
-      if (rotateMoleculeToggle) rotateMoleculeToggle.checked = false;
-      setStatus(`Click an atom to replace with ${selectedGroupType}.`);
-    } else {
-      setStatus("Add group cancelled.");
+    setAddGroupMode(!addGroupMode, "desktop");
+  });
+}
+
+if (groupDrawerToggle) {
+  groupDrawerToggle.addEventListener("click", () => {
+    groupDrawer?.classList.toggle("active");
+    groupDrawer?.setAttribute("aria-hidden", groupDrawer.classList.contains("active") ? "false" : "true");
+  });
+}
+
+if (groupSelectMobile) {
+  groupSelectMobile.addEventListener("change", () => {
+    selectedGroupType = groupSelectMobile.value;
+    if (groupSelect) {
+      groupSelect.value = selectedGroupType;
     }
+  });
+}
+
+if (addGroupMobile) {
+  addGroupMobile.addEventListener("click", () => {
+    setAddGroupMode(true, "mobile");
+  });
+}
+
+if (cancelGroupMobile) {
+  cancelGroupMobile.addEventListener("click", () => {
+    setAddGroupMode(false, "mobile");
   });
 }
 
@@ -1642,8 +1693,7 @@ renderer?.domElement.addEventListener(
     }
     if (addGroupMode && hit) {
       addGroupAtAtom(hit);
-      addGroupMode = false;
-      if (addGroupButton) addGroupButton.classList.remove("active");
+      setAddGroupMode(false, "mobile");
       downPoint = null;
       return;
     }
