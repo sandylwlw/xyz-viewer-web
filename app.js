@@ -779,12 +779,17 @@ const groupTemplates = {
       }));
     })(),
   },
-  COOH: {
+  CHO: {
     anchorElement: "C",
     atoms: [
-      { element: "O", position: new THREE.Vector3(0, 0, 1.23) },
-      { element: "O", position: new THREE.Vector3(1.36, 0, -0.2) },
-      { element: "H", position: new THREE.Vector3(1.36, 0, 0.78) },
+      {
+        element: "O",
+        position: new THREE.Vector3(Math.sin((2 * Math.PI) / 3), 0, Math.cos((2 * Math.PI) / 3)).multiplyScalar(1.23),
+      },
+      {
+        element: "H",
+        position: new THREE.Vector3(Math.sin((-2 * Math.PI) / 3), 0, Math.cos((-2 * Math.PI) / 3)).multiplyScalar(1.09),
+      },
     ],
   },
   Ph: {
@@ -1014,6 +1019,21 @@ function addGroupAtAtom(mesh) {
       {
         element: "H",
         position: new THREE.Vector3(Math.sin(theta), 0, Math.cos(theta)).multiplyScalar(bond),
+      },
+    ];
+  }
+  if (selectedGroupType === "CHO") {
+    const targetDir = direction.clone().negate();
+    baseQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), targetDir);
+    axis = targetDir.clone();
+    templateAtoms = [
+      {
+        element: "O",
+        position: new THREE.Vector3(Math.sin((2 * Math.PI) / 3), 0, Math.cos((2 * Math.PI) / 3)).multiplyScalar(1.23),
+      },
+      {
+        element: "H",
+        position: new THREE.Vector3(Math.sin((-2 * Math.PI) / 3), 0, Math.cos((-2 * Math.PI) / 3)).multiplyScalar(1.09),
       },
     ];
   }
