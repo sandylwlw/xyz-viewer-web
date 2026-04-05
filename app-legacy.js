@@ -53,13 +53,17 @@ if (renderer) {
   }
 }
 
-const controls = renderer ? new THREE.OrbitControls(camera, renderer.domElement) : null;
+const controls = renderer && THREE.OrbitControls
+  ? new THREE.OrbitControls(camera, renderer.domElement)
+  : null;
 if (controls) {
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
   controls.minDistance = 5;
   controls.maxDistance = 400;
   controls.target.set(0, 0, 0);
+} else {
+  setStatus("OrbitControls unavailable; drag disabled.");
 }
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
