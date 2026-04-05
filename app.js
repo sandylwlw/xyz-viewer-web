@@ -28,6 +28,13 @@ try {
 if (renderer) {
   renderer.setPixelRatio(isIOS ? 1 : Math.min(window.devicePixelRatio || 1, 2));
   renderer.setClearColor(0xfaf7f1, 1);
+  if (renderer.getContext) {
+    const gl = renderer.getContext();
+    if (gl) {
+      gl.enable(gl.DEPTH_TEST);
+      gl.clearColor(0.98, 0.97, 0.95, 1.0);
+    }
+  }
 }
 
 const controls = renderer ? new OrbitControls(camera, renderer.domElement) : null;
@@ -318,7 +325,16 @@ resize();
 function animate() {
   requestAnimationFrame(animate);
   if (controls) controls.update();
-  if (renderer) renderer.render(scene, camera);
+  if (renderer) {
+    renderer.render(scene, camera);
+    const gl = renderer.getContext?.();
+    if (gl) {
+      const error = gl.getError();
+      if (error !== gl.NO_ERROR) {
+        setStatus(`WebGL error: ${error}`);
+      }
+    }
+  }
 }
 
 if (renderer) {
