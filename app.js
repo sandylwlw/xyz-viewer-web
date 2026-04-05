@@ -261,17 +261,24 @@ window.addEventListener("drop", (event) => {
 });
 
 function resize() {
-  const container = canvas.parentElement;
-  const width = container?.clientWidth || window.innerWidth;
-  const height = container?.clientHeight || window.innerHeight;
   if (!renderer) return;
-  if (!width || !height) return;
+  const container = canvas.parentElement;
+  const rect = container?.getBoundingClientRect();
+  const width = rect?.width || window.innerWidth;
+  const height = rect?.height || window.innerHeight;
+  if (!width || !height) {
+    requestAnimationFrame(resize);
+    return;
+  }
   renderer.setSize(width, height, false);
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
 }
 
 window.addEventListener("resize", resize);
+window.addEventListener("orientationchange", () => {
+  setTimeout(resize, 250);
+});
 resize();
 
 function animate() {
