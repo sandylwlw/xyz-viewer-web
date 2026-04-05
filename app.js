@@ -12,15 +12,26 @@ scene.background = new THREE.Color(0xfaf7f1);
 const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 2000);
 camera.position.set(0, 0, 60);
 
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+let renderer = null;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+} catch (error) {
+  setStatus("WebGL init failed. Try another browser.");
+}
 
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.08;
-controls.minDistance = 5;
-controls.maxDistance = 400;
-controls.target.set(0, 0, 0);
+if (renderer) {
+  renderer.setPixelRatio(isIOS ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+}
+
+const controls = renderer ? new OrbitControls(camera, renderer.domElement) : null;
+if (controls) {
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.minDistance = 5;
+  controls.maxDistance = 400;
+  controls.target.set(0, 0, 0);
+}
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
 scene.add(ambientLight);
@@ -174,8 +185,10 @@ function centerAndFrame(group) {
   const maxDim = Math.max(size.x, size.y, size.z);
   const distance = maxDim * 1.8 + 10;
   camera.position.set(distance, distance * 0.6, distance);
-  controls.target.set(0, 0, 0);
-  controls.update();
+  if (controls) {
+    controls.target.set(0, 0, 0);
+    controls.update();
+  }
 }
 
 function clearMolecule() {
@@ -232,9 +245,13 @@ window.addEventListener("drop", (event) => {
 });
 
 function resize() {
-  const { clientWidth, clientHeight } = canvas.parentElement;
-  renderer.setSize(clientWidth, clientHeight, false);
-  camera.aspect = clientWidth / clientHeight;
+  const container = canvas.parentElement;
+  const width = container?.clientWidth || window.innerWidth;
+  const height = container?.clientHeight || window.innerHeight;
+  if (!renderer) return;
+  if (!width || !height) return;
+  renderer.setSize(width, height, false);
+  camera.aspect = width / height;
   camera.updateProjectionMatrix();
 }
 
@@ -243,8 +260,10 @@ resize();
 
 function animate() {
   requestAnimationFrame(animate);
-  controls.update();
-  renderer.render(scene, camera);
+  if (controls) controls.update();
+  if (renderer) renderer.render(scene, camera);
 }
 
-animate();
+if (renderer) {
+  animate();
+}
