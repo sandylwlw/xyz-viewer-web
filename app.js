@@ -739,6 +739,15 @@ function isFullscreen() {
   );
 }
 
+function isPseudoFullscreen() {
+  return document.body.classList.contains("pseudo-fullscreen");
+}
+
+function setPseudoFullscreen(enabled) {
+  document.body.classList.toggle("pseudo-fullscreen", enabled);
+  resize();
+}
+
 function requestFullscreen(target) {
   const el = target || document.documentElement;
   return (
@@ -760,15 +769,28 @@ function exitFullscreen() {
 
 function updateFullscreenButton() {
   if (!fullscreenButton) return;
-  fullscreenButton.textContent = isFullscreen() ? "Exit full screen" : "Full screen";
+  const active = isFullscreen() || isPseudoFullscreen();
+  fullscreenButton.textContent = active ? "Exit full screen" : "Full screen";
 }
 
 if (fullscreenButton) {
   fullscreenButton.addEventListener("click", () => {
-    if (isFullscreen()) {
-      exitFullscreen();
-    } else {
+    const supportsFullscreen = !!(
+      document.documentElement.requestFullscreen ||
+      document.documentElement.webkitRequestFullscreen ||
+      document.documentElement.mozRequestFullScreen ||
+      document.documentElement.msRequestFullscreen
+    );
+    if (isFullscreen() || isPseudoFullscreen()) {
+      if (isPseudoFullscreen()) {
+        setPseudoFullscreen(false);
+      } else {
+        exitFullscreen();
+      }
+    } else if (supportsFullscreen) {
       requestFullscreen(document.documentElement);
+    } else {
+      setPseudoFullscreen(true);
     }
   });
   document.addEventListener("fullscreenchange", updateFullscreenButton);
