@@ -1,10 +1,10 @@
 /* global THREE */
 
-window.__xyzViewerLegacyLoaded = true;
-
-if (document.getElementById("status")) {
-  document.getElementById("status").textContent = "Legacy viewer booting...";
-}
+if (!window.__xyzViewerLoaded) {
+  window.__xyzViewerLegacyLoaded = true;
+  if (document.getElementById("status")) {
+    document.getElementById("status").textContent = "Legacy viewer booting...";
+  }
 
 const canvas = document.getElementById("viewer");
 const statusEl = document.getElementById("status");
@@ -359,4 +359,5 @@ function animate() {
 
 if (renderer) {
   animate();
+}
 }
