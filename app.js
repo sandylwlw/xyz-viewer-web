@@ -209,6 +209,8 @@ function centerAndFrame(group) {
   if (controls) {
     controls.target.set(0, 0, 0);
     controls.update();
+  } else {
+    camera.lookAt(0, 0, 0);
   }
 }
 
