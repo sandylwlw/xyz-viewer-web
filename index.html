@@ -141,6 +141,7 @@
             const target = new THREE.Vector3(0, 0, 0);
             const spherical = new THREE.Spherical();
             const pointer = { x: 0, y: 0, active: false };
+            let lastTouchDistance = null;
 
             const updateSpherical = () => {
               const offset = new THREE.Vector3().subVectors(cameraInstance.position, target);
@@ -194,6 +195,55 @@
                 zoom(event.deltaY);
               },
               { passive: false }
+            );
+
+            domElement.addEventListener(
+              "touchstart",
+              (event) => {
+                if (event.touches.length === 1) {
+                  const touch = event.touches[0];
+                  pointer.active = true;
+                  pointer.x = touch.clientX;
+                  pointer.y = touch.clientY;
+                } else if (event.touches.length === 2) {
+                  const dx = event.touches[0].clientX - event.touches[1].clientX;
+                  const dy = event.touches[0].clientY - event.touches[1].clientY;
+                  lastTouchDistance = Math.hypot(dx, dy);
+                }
+              },
+              { passive: false }
+            );
+
+            domElement.addEventListener(
+              "touchmove",
+              (event) => {
+                if (event.touches.length === 1 && pointer.active) {
+                  const touch = event.touches[0];
+                  rotate(touch.clientX - pointer.x, touch.clientY - pointer.y);
+                  pointer.x = touch.clientX;
+                  pointer.y = touch.clientY;
+                  event.preventDefault();
+                } else if (event.touches.length === 2) {
+                  const dx = event.touches[0].clientX - event.touches[1].clientX;
+                  const dy = event.touches[0].clientY - event.touches[1].clientY;
+                  const distance = Math.hypot(dx, dy);
+                  if (lastTouchDistance) {
+                    zoom(lastTouchDistance - distance);
+                  }
+                  lastTouchDistance = distance;
+                  event.preventDefault();
+                }
+              },
+              { passive: false }
+            );
+
+            domElement.addEventListener(
+              "touchend",
+              () => {
+                pointer.active = false;
+                lastTouchDistance = null;
+              },
+              { passive: true }
             );
 
             return {
