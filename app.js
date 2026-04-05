@@ -1,6 +1,3 @@
-import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
-import { OrbitControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js";
-
 window.__xyzViewerInitDone = false;
 
 const canvas = document.getElementById("viewer");
@@ -18,6 +15,10 @@ const bondToggle = document.getElementById("bond-toggle");
 const editToggle = document.getElementById("edit-toggle");
 let selectedFile = null;
 let selectedFileName = "";
+
+if (!window.THREE) {
+  setStatus("THREE failed to load.");
+}
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xfaf7f1);
@@ -165,7 +166,7 @@ function createFallbackControls(cameraInstance, domElement) {
 
 const controls = renderer
   ? THREE.OrbitControls
-    ? new OrbitControls(camera, renderer.domElement)
+    ? new THREE.OrbitControls(camera, renderer.domElement)
     : createFallbackControls(camera, renderer.domElement)
   : null;
 

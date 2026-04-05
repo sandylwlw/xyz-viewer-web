@@ -91,7 +91,6 @@
       window.__xyzViewerLoaded = false;
       window.__xyzViewerLegacyLoaded = false;
     </script>
-    <script type="module" src="app.js?v=50fdc91"></script>
     <script
       src="https://unpkg.com/three@0.149.0/build/three.min.js?v=31"
       onload="window.__threeLoaded=true;setBootStatus('Three loaded.')"
@@ -102,6 +101,7 @@
       onload="window.__controlsLoaded=true;setBootStatus('OrbitControls loaded.')"
       onerror="document.getElementById('status').textContent='Failed to load OrbitControls.js'"
     ></script>
+    <script src="app.js?v=nonmodule-1"></script>
     <script>
       setTimeout(() => {
         if (window.__xyzViewerLegacyLoaded) return;
