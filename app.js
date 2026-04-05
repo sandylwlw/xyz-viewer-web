@@ -460,6 +460,26 @@ function setEditSelection(meshes) {
   editSelection = meshes;
 }
 
+function addToEditSelection(meshes) {
+  const next = [...editSelection];
+  meshes.forEach((mesh) => {
+    if (next.includes(mesh)) return;
+    if (mesh.material && mesh.material.emissive) {
+      mesh.material.emissive.setHex(0x0f766e);
+    }
+    next.push(mesh);
+  });
+  editSelection = next;
+}
+
+function removeFromEditSelection(mesh) {
+  if (!editSelection.includes(mesh)) return;
+  if (mesh.material && mesh.material.emissive) {
+    mesh.material.emissive.setHex(0x000000);
+  }
+  editSelection = editSelection.filter((item) => item !== mesh);
+}
+
 function updateDistanceLabel() {
   if (!distanceLine || !distanceLabel || !moleculeGroup) return;
   const positions = distanceLine.geometry.attributes.position.array;
@@ -909,6 +929,17 @@ renderer?.domElement.addEventListener(
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation?.();
+    if (event.shiftKey && hit) {
+      if (editSelection.includes(hit)) {
+        removeFromEditSelection(hit);
+        setStatus(`Selected ${editSelection.length} atoms.`);
+      } else {
+        addToEditSelection([hit]);
+        setStatus(`Selected ${editSelection.length} atoms.`);
+      }
+      downPoint = null;
+      return;
+    }
     if (rotateMode && editSelection.length) {
       rotatingSelection = true;
       rotateCenter = getSelectionCenter();
@@ -957,6 +988,7 @@ renderer?.domElement.addEventListener(
       x: event.clientX - selectRect.left,
       y: event.clientY - selectRect.top,
     };
+    selectStart.additive = event.shiftKey;
     if (selectionBoxEl) {
       selectionBoxEl.style.display = "block";
       selectionBoxEl.style.left = `${selectStart.x}px`;
@@ -1084,7 +1116,9 @@ renderer?.domElement.addEventListener("pointerup", (event) => {
       controls.enabled = true;
     }
     if (width < 5 && height < 5) {
-      clearEditSelection();
+      if (!selectStart?.additive) {
+        clearEditSelection();
+      }
       downPoint = null;
       return;
     }
@@ -1097,11 +1131,17 @@ renderer?.domElement.addEventListener("pointerup", (event) => {
       return screen.x >= left && screen.x <= right && screen.y >= top && screen.y <= bottom;
     });
     if (selected.length) {
-      setEditSelection(selected);
-      setStatus(`Selected ${selected.length} atoms.`);
+      if (selectStart?.additive) {
+        addToEditSelection(selected);
+      } else {
+        setEditSelection(selected);
+      }
+      setStatus(`Selected ${editSelection.length} atoms.`);
     } else {
-      clearEditSelection();
-      setStatus("No atoms selected.");
+      if (!selectStart?.additive) {
+        clearEditSelection();
+        setStatus("No atoms selected.");
+      }
     }
     downPoint = null;
     return;
