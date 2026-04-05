@@ -753,7 +753,7 @@ function exitFullscreen() {
 function updateFullscreenButton() {
   if (!fullscreenButton) return;
   const active = isFullscreen() || isPseudoFullscreen();
-  fullscreenButton.textContent = active ? "Exit full screen" : "Full screen";
+  fullscreenButton.textContent = active ? "Exit" : "Full screen";
 }
 
 if (fullscreenButton) {
