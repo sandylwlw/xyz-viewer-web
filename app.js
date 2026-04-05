@@ -778,24 +778,26 @@ if (fileInput) {
   });
 }
 
-window.addEventListener(
-  "keydown",
-  (event) => {
-    if (isIOSMobile) return;
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
-      const target = event.target;
-      if (
-        target &&
-        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
-      ) {
-        return;
-      }
-      event.preventDefault();
-      undoMove();
-    }
-  },
-  { capture: true }
-);
+function handleUndoShortcut(event) {
+  if (isIOSMobile) return;
+  if (!(event.metaKey || event.ctrlKey)) return;
+  const key = event.key?.toLowerCase();
+  if (key !== "z" && event.code !== "KeyZ") return;
+  const target = event.target;
+  if (
+    target &&
+    (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+  ) {
+    return;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation?.();
+  undoMove();
+}
+
+document.addEventListener("keydown", handleUndoShortcut, { capture: true });
+window.addEventListener("keydown", handleUndoShortcut, { capture: true });
 
 function isFullscreen() {
   return !!(
