@@ -27,10 +27,15 @@
           <div class="brand-subtitle">Open .xyz files and explore in 3D</div>
         </div>
       </div>
-      <div class="file-button" role="button" tabindex="0" id="open-button">
+      <label class="file-button" for="file-input">
+        <input
+          id="file-input"
+          class="file-input"
+          type="file"
+          accept=".xyz,.txt,chemical/x-xyz,text/plain"
+        />
         <span>Open XYZ</span>
-      </div>
-      <input id="file-input" class="file-input" type="file" accept=".xyz,.txt,chemical/x-xyz,text/plain" />
+      </label>
     </header>
 
     <main class="stage">

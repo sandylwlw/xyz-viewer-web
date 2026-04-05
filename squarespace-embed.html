@@ -7,13 +7,15 @@
         <div class="xyzviewer-subtitle">Open .xyz files and explore in 3D</div>
       </div>
     </div>
-    <button class="xyzviewer-button" type="button" id="xyzviewer-open">Open XYZ</button>
-    <input
-      id="xyzviewer-input"
-      class="xyzviewer-input"
-      type="file"
-      accept=".xyz,.txt,chemical/x-xyz,text/plain"
-    />
+    <label class="xyzviewer-button" for="xyzviewer-input">
+      <input
+        id="xyzviewer-input"
+        class="xyzviewer-input"
+        type="file"
+        accept=".xyz,.txt,chemical/x-xyz,text/plain"
+      />
+      <span>Open XYZ</span>
+    </label>
   </div>
 
   <div class="xyzviewer-stage">
@@ -100,6 +102,8 @@
     font-size: 14px;
     cursor: pointer;
     box-shadow: 0 18px 30px rgba(15, 118, 110, 0.28);
+    position: relative;
+    overflow: hidden;
   }
 
   .xyzviewer-button:focus {
@@ -109,13 +113,10 @@
 
   .xyzviewer-input {
     position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    border: 0;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    font-size: 0;
   }
 
   .xyzviewer-stage {
@@ -227,7 +228,6 @@
   const statusEl = root.querySelector("#xyzviewer-status");
   const hudEl = root.querySelector("#xyzviewer-hud");
   const fileInput = root.querySelector("#xyzviewer-input");
-  const openButton = root.querySelector("#xyzviewer-open");
   const stage = root.querySelector(".xyzviewer-stage");
 
   const scene = new THREE.Scene();
@@ -438,10 +438,6 @@
     handleFile(event.target.files[0]);
   });
 
-  openButton.addEventListener("click", () => {
-    fileInput.value = "";
-    fileInput.click();
-  });
 
   function resize() {
     const { clientWidth, clientHeight } = stage;

@@ -119,6 +119,8 @@ body {
   cursor: pointer;
   box-shadow: 0 18px 30px rgba(15, 118, 110, 0.28);
   user-select: none;
+  position: relative;
+  overflow: hidden;
 }
 
 .file-button:focus {
@@ -128,13 +130,10 @@ body {
 
 .file-input {
   position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  border: 0;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 0;
 }
 
 .stage {

@@ -5,7 +5,6 @@ const canvas = document.getElementById("viewer");
 const statusEl = document.getElementById("status");
 const hudEl = document.getElementById("hud");
 const fileInput = document.getElementById("file-input");
-const openButton = document.getElementById("open-button");
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xfaf7f1);
@@ -215,18 +214,6 @@ fileInput.addEventListener("change", (event) => {
   handleFile(event.target.files[0]);
 });
 
-openButton.addEventListener("click", () => {
-  fileInput.value = "";
-  fileInput.click();
-});
-
-openButton.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" || event.key === " ") {
-    event.preventDefault();
-    fileInput.value = "";
-    fileInput.click();
-  }
-});
 
 window.addEventListener("dragover", (event) => {
   event.preventDefault();
