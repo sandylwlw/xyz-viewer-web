@@ -9,6 +9,13 @@ const hudEl = document.getElementById("hud");
 const fileInput = document.getElementById("file-input");
 const loadButton = document.getElementById("load-button");
 const distanceLabel = document.getElementById("distance-label");
+const stageEl = document.querySelector(".stage");
+const demoButton = document.getElementById("demo-button");
+const resetButton = document.getElementById("reset-button");
+const clearMeasureButton = document.getElementById("measure-clear");
+const snapshotButton = document.getElementById("snapshot-button");
+const bondToggle = document.getElementById("bond-toggle");
+const editToggle = document.getElementById("edit-toggle");
 let selectedFile = null;
 let selectedFileName = "";
 
@@ -182,11 +189,36 @@ fillLight.position.set(-30, -10, 20);
 scene.add(fillLight);
 
 let moleculeGroup = null;
+let bondGroup = null;
 let atomMeshList = [];
+let atomInfoList = [];
 let selectedAtoms = [];
 let distanceLine = null;
+let showBonds = true;
+let bondsSkipped = false;
+let editMode = false;
+let draggingAtom = null;
+let dragOffset = null;
+let dragPlane = null;
+let bondsHiddenForDrag = false;
 const raycaster = new THREE.Raycaster();
 const pointerNDC = new THREE.Vector2();
+
+const demoXYZ = `12
+Demo: formamide
+C  0.0000  0.0000  0.0000
+O  1.2000  0.0000  0.0000
+N -1.2000  0.0000  0.0000
+H -1.6000  0.9000  0.0000
+H -1.6000 -0.9000  0.0000
+H  0.0000  0.0000  1.0500
+C  2.4000  0.0000  0.0000
+H  2.8000  0.9000  0.0000
+H  2.8000 -0.9000  0.0000
+H  2.4000  0.0000  1.0500
+H -2.4000  0.0000  0.0000
+H -2.8000  0.0000  0.9000
+`;
 
 const elementColors = {
   H: 0xf8fafc,
@@ -264,7 +296,10 @@ function parseXYZ(contents) {
 }
 
 function buildMolecule(atoms) {
+  bondsSkipped = false;
   const group = new THREE.Group();
+  const atomGroup = new THREE.Group();
+  const bondGroupLocal = new THREE.Group();
   const atomMeshes = [];
   const atomSegments = isIOS ? 16 : 32;
   const bondSegments = isIOS ? 8 : 16;
@@ -281,34 +316,50 @@ function buildMolecule(atoms) {
     const sphere = new THREE.Mesh(atomGeometry, material);
     sphere.scale.setScalar(radius * 0.7 + 0.2);
     sphere.position.copy(atom.position);
-    group.add(sphere);
+    atomGroup.add(sphere);
     atomMeshes.push({ mesh: sphere, radius, element: atom.element });
   });
 
+  const skipBonds = isIOS && atomMeshes.length > 1200;
+  if (!skipBonds) {
+    rebuildBonds(atomMeshes, bondGroupLocal, bondSegments);
+  } else {
+    bondsSkipped = true;
+  }
+
+  bondGroupLocal.visible = showBonds && !bondsSkipped;
+  group.add(atomGroup);
+  group.add(bondGroupLocal);
+  bondGroup = bondGroupLocal;
+  atomMeshList = atomMeshes.map((item) => item.mesh);
+  atomInfoList = atomMeshes;
+  return group;
+}
+
+function rebuildBonds(atomMeshes, bondGroupLocal, bondSegments = 16) {
+  if (!bondGroupLocal) return;
+  bondGroupLocal.children.forEach((child) => {
+    if (child.geometry) child.geometry.dispose();
+    if (child.material) child.material.dispose();
+  });
+  bondGroupLocal.clear();
   const bondMaterial = new THREE.MeshStandardMaterial({
     color: 0x64748b,
     roughness: 0.4,
     metalness: 0.1,
   });
-
-  const skipBonds = isIOS && atomMeshes.length > 1200;
-  if (!skipBonds) {
-    for (let i = 0; i < atomMeshes.length; i += 1) {
-      for (let j = i + 1; j < atomMeshes.length; j += 1) {
-        const a = atomMeshes[i];
-        const b = atomMeshes[j];
-        const threshold = (a.radius + b.radius) * 1.2;
-        const distance = a.mesh.position.distanceTo(b.mesh.position);
-        if (distance > 0.1 && distance <= threshold) {
-          const bond = createBond(a.mesh.position, b.mesh.position, bondMaterial, bondSegments);
-          group.add(bond);
-        }
+  for (let i = 0; i < atomMeshes.length; i += 1) {
+    for (let j = i + 1; j < atomMeshes.length; j += 1) {
+      const a = atomMeshes[i];
+      const b = atomMeshes[j];
+      const threshold = (a.radius + b.radius) * 1.2;
+      const distance = a.mesh.position.distanceTo(b.mesh.position);
+      if (distance > 0.1 && distance <= threshold) {
+        const bond = createBond(a.mesh.position, b.mesh.position, bondMaterial, bondSegments);
+        bondGroupLocal.add(bond);
       }
     }
   }
-
-  atomMeshList = atomMeshes.map((item) => item.mesh);
-  return group;
 }
 
 function createBond(start, end, material, radialSegments = 16) {
@@ -349,7 +400,9 @@ function clearMolecule() {
     if (child.material) child.material.dispose();
   });
   moleculeGroup = null;
+  bondGroup = null;
   atomMeshList = [];
+  atomInfoList = [];
   clearMeasurement();
 }
 
@@ -385,6 +438,24 @@ function updateDistanceLabel() {
   const x = (projected.x * 0.5 + 0.5) * rect.width + rect.left;
   const y = (-projected.y * 0.5 + 0.5) * rect.height + rect.top;
   distanceLabel.style.transform = `translate(${x}px, ${y}px)`;
+}
+
+function updateMeasurementLine() {
+  if (!distanceLine || selectedAtoms.length !== 2) return;
+  const [a, b] = selectedAtoms;
+  const positions = distanceLine.geometry.attributes.position.array;
+  positions[0] = a.position.x;
+  positions[1] = a.position.y;
+  positions[2] = a.position.z;
+  positions[3] = b.position.x;
+  positions[4] = b.position.y;
+  positions[5] = b.position.z;
+  distanceLine.geometry.attributes.position.needsUpdate = true;
+  const distance = a.position.distanceTo(b.position);
+  if (distanceLabel) {
+    distanceLabel.textContent = `${distance.toFixed(2)} A`;
+  }
+  updateDistanceLabel();
 }
 
 function selectAtom(mesh) {
@@ -423,6 +494,16 @@ function pickAtom(clientX, clientY) {
   }
 }
 
+function pickAtomForDrag(clientX, clientY) {
+  if (!renderer || !atomMeshList.length) return null;
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointerNDC.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  pointerNDC.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointerNDC, camera);
+  const intersections = raycaster.intersectObjects(atomMeshList, false);
+  return intersections.length ? intersections[0].object : null;
+}
+
 function loadXYZ(contents, filename = "file.xyz") {
   clearMolecule();
   const atoms = parseXYZ(contents);
@@ -434,7 +515,11 @@ function loadXYZ(contents, filename = "file.xyz") {
   scene.add(moleculeGroup);
   resize();
   centerAndFrame(moleculeGroup);
-  const bondNote = isIOS && atoms.length > 1200 ? " (bonds off on iOS)" : "";
+  if (bondToggle) {
+    bondToggle.checked = showBonds && !bondsSkipped;
+    bondToggle.disabled = bondsSkipped;
+  }
+  const bondNote = bondsSkipped ? " (bonds off on iOS)" : "";
   setStatus(`Loaded ${filename} (${atoms.length} atoms)${bondNote}.`);
   hudEl.style.display = "none";
   if (renderer) {
@@ -515,6 +600,120 @@ if (!bindFileInput()) {
   window.addEventListener("DOMContentLoaded", bindFileInput, { once: true });
 }
 
+if (bondToggle) {
+  bondToggle.checked = showBonds;
+}
+
+function toggleBonds(nextState = !showBonds) {
+  showBonds = nextState;
+  if (bondToggle) {
+    bondToggle.checked = showBonds && !bondsSkipped;
+  }
+  if (bondGroup) {
+    bondGroup.visible = showBonds && !bondsSkipped;
+  }
+  if (bondsSkipped && showBonds) {
+    setStatus("Bonds disabled for performance on iOS.");
+  }
+}
+
+function loadDemo() {
+  loadXYZ(demoXYZ, "demo.xyz");
+}
+
+function resetView() {
+  if (!moleculeGroup) {
+    setStatus("Load a molecule first.");
+    return;
+  }
+  centerAndFrame(moleculeGroup);
+  setStatus("View reset.");
+}
+
+function clearMeasurementAction() {
+  clearMeasurement();
+  setStatus("Measurement cleared.");
+}
+
+function saveSnapshot() {
+  if (!renderer) {
+    setStatus("Renderer not ready.");
+    return;
+  }
+  const canvasEl = renderer.domElement;
+  const download = (blob) => {
+    if (!blob) {
+      setStatus("Snapshot failed.");
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `xyz-viewer-${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setStatus("Saved PNG snapshot.");
+  };
+  if (canvasEl.toBlob) {
+    canvasEl.toBlob(download, "image/png");
+  } else {
+    const dataUrl = canvasEl.toDataURL("image/png");
+    fetch(dataUrl)
+      .then((res) => res.blob())
+      .then(download)
+      .catch(() => setStatus("Snapshot failed."));
+  }
+}
+
+if (bondToggle) {
+  bondToggle.addEventListener("change", () => {
+    toggleBonds(bondToggle.checked);
+  });
+}
+
+if (editToggle) {
+  editToggle.checked = editMode;
+  editToggle.addEventListener("change", () => {
+    editMode = editToggle.checked;
+    setStatus(editMode ? "Edit mode on. Drag atoms to move." : "Edit mode off.");
+  });
+}
+
+if (demoButton) {
+  demoButton.addEventListener("click", loadDemo);
+}
+
+if (resetButton) {
+  resetButton.addEventListener("click", resetView);
+}
+
+if (clearMeasureButton) {
+  clearMeasureButton.addEventListener("click", clearMeasurementAction);
+}
+
+if (snapshotButton) {
+  snapshotButton.addEventListener("click", saveSnapshot);
+}
+
+window.addEventListener("keydown", (event) => {
+  if (event.metaKey || event.ctrlKey || event.altKey) return;
+  const target = event.target;
+  if (
+    target &&
+    (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+  ) {
+    return;
+  }
+  const key = event.key.toLowerCase();
+  if (key === "r") resetView();
+  if (key === "c") clearMeasurementAction();
+  if (key === "b") toggleBonds();
+  if (key === "s") saveSnapshot();
+  if (key === "d") loadDemo();
+});
+
 window.__xyzViewerInitDone = true;
 window.__xyzViewerLoaded = true;
 
@@ -522,17 +721,24 @@ window.__xyzViewerLoaded = true;
 window.addEventListener("dragover", (event) => {
   event.preventDefault();
   hudEl.classList.add("dragging");
+  stageEl?.classList.add("dragging");
 });
 
 window.addEventListener("dragleave", () => {
   hudEl.classList.remove("dragging");
+  stageEl?.classList.remove("dragging");
 });
 
 window.addEventListener("drop", (event) => {
   event.preventDefault();
   hudEl.classList.remove("dragging");
+  stageEl?.classList.remove("dragging");
   const file = event.dataTransfer.files[0];
-  handleFile(file);
+  if (file) {
+    handleFile(file);
+  } else {
+    setStatus("Drop a .xyz file to load.");
+  }
 });
 
 function resize() {
@@ -579,19 +785,76 @@ if (renderer) {
 let downPoint = null;
 renderer?.domElement.addEventListener("pointerdown", (event) => {
   downPoint = { x: event.clientX, y: event.clientY };
+  if (!editMode) return;
+  const hit = pickAtomForDrag(event.clientX, event.clientY);
+  if (!hit) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointerNDC.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointerNDC.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointerNDC, camera);
+  draggingAtom = hit;
+  const normal = new THREE.Vector3();
+  camera.getWorldDirection(normal);
+  dragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, hit.position);
+  const intersection = new THREE.Vector3();
+  raycaster.ray.intersectPlane(dragPlane, intersection);
+  dragOffset = hit.position.clone().sub(intersection);
+  if (controls && controls.enabled !== undefined) {
+    controls.enabled = false;
+  }
+  if (bondGroup && bondGroup.visible) {
+    bondGroup.visible = false;
+    bondsHiddenForDrag = true;
+  }
+});
+renderer?.domElement.addEventListener("pointermove", (event) => {
+  if (!draggingAtom || !dragPlane) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointerNDC.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointerNDC.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointerNDC, camera);
+  const intersection = new THREE.Vector3();
+  if (raycaster.ray.intersectPlane(dragPlane, intersection)) {
+    draggingAtom.position.copy(intersection.add(dragOffset));
+    const info = atomInfoList.find((item) => item.mesh === draggingAtom);
+    if (info) {
+      info.mesh.position.copy(draggingAtom.position);
+    }
+    updateMeasurementLine();
+  }
 });
 renderer?.domElement.addEventListener("pointerup", (event) => {
   if (!downPoint) return;
+  if (draggingAtom) {
+    draggingAtom = null;
+    dragPlane = null;
+    dragOffset = null;
+    if (controls && controls.enabled !== undefined) {
+      controls.enabled = true;
+    }
+    if (bondsHiddenForDrag && bondGroup && showBonds && !bondsSkipped) {
+      rebuildBonds(atomInfoList, bondGroup, isIOS ? 8 : 16);
+      bondGroup.visible = true;
+      bondsHiddenForDrag = false;
+    }
+    updateMeasurementLine();
+    downPoint = null;
+    return;
+  }
   const dx = event.clientX - downPoint.x;
   const dy = event.clientY - downPoint.y;
   if (Math.hypot(dx, dy) < 6) {
-    pickAtom(event.clientX, event.clientY);
+    if (!editMode) {
+      pickAtom(event.clientX, event.clientY);
+    }
   }
   downPoint = null;
 });
 renderer?.domElement.addEventListener("touchend", (event) => {
   if (event.changedTouches.length === 1) {
     const touch = event.changedTouches[0];
-    pickAtom(touch.clientX, touch.clientY);
+    if (!editMode) {
+      pickAtom(touch.clientX, touch.clientY);
+    }
   }
 });

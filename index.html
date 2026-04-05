@@ -30,7 +30,7 @@
       <div class="file-picker">
         <div class="file-picker-title">Open XYZ</div>
         <div class="file-picker-row">
-          <input id="file-input" class="file-input-visible" type="file" />
+          <input id="file-input" class="file-input-visible" type="file" accept=".xyz,.XYZ" />
           <button class="file-load-button" id="load-button" type="button">Load</button>
         </div>
       </div>
@@ -45,7 +45,27 @@
           Tap “Open XYZ” to choose a file from the iPhone Files app. If selection fails on iOS, open the file in Files,
           tap Share → “Open in Safari” (or “Copy to Safari”), then return here and select it from Recents.
         </div>
-        <div class="hud-tip">Gestures: one finger orbit, two fingers pan, pinch to zoom.</div>
+        <div class="hud-tip">
+          Gestures: one finger orbit, two fingers pan, pinch to zoom. Tap two atoms to measure. Enable Edit to move atoms.
+        </div>
+      </section>
+      <section class="toolbox" id="toolbox">
+        <div class="toolbox-title">Tools</div>
+        <div class="toolbox-grid">
+          <button class="tool-button" id="demo-button" type="button">Load demo</button>
+          <button class="tool-button" id="reset-button" type="button">Reset view</button>
+          <button class="tool-button" id="measure-clear" type="button">Clear measure</button>
+          <button class="tool-button" id="snapshot-button" type="button">Save PNG</button>
+        </div>
+        <label class="tool-toggle">
+          <input id="bond-toggle" type="checkbox" checked />
+          <span>Show bonds</span>
+        </label>
+        <label class="tool-toggle">
+          <input id="edit-toggle" type="checkbox" />
+          <span>Edit mode</span>
+        </label>
+        <div class="toolbox-hint">Edit mode: drag atoms to move. Orbit disabled while dragging.</div>
       </section>
     </main>
 
