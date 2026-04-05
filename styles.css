@@ -418,7 +418,7 @@ body.pseudo-fullscreen .toolbox {
 
 .group-drawer-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 8px;
 }
 
@@ -504,7 +504,7 @@ body.pseudo-fullscreen .toolbox {
     position: fixed;
     left: auto;
     right: 12px;
-    bottom: 12px;
+    bottom: 24px;
     display: block;
     z-index: 4;
     width: min(220px, calc(100vw - 24px));

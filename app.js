@@ -25,7 +25,6 @@ const groupDrawerToggle = document.getElementById("group-drawer-toggle");
 const groupDrawerPanel = document.getElementById("group-drawer-panel");
 const groupSelectMobile = document.getElementById("group-select-mobile");
 const addGroupMobile = document.getElementById("add-group-mobile");
-const cancelGroupMobile = document.getElementById("cancel-group-mobile");
 
 if (!window.THREE) {
   setStatus("THREE failed to load.");
@@ -1412,11 +1411,6 @@ if (addGroupMobile) {
   });
 }
 
-if (cancelGroupMobile) {
-  cancelGroupMobile.addEventListener("click", () => {
-    setAddGroupMode(false, "mobile");
-  });
-}
 
 function handleUndoShortcut(event) {
   if (isIOSMobile) return;
