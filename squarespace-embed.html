@@ -264,6 +264,7 @@
   const hudEl = root.querySelector("#xyzviewer-hud");
   const fileInput = root.querySelector("#xyzviewer-input");
   const loadButton = root.querySelector("#xyzviewer-load");
+  let selectedFile = null;
   const stage = root.querySelector(".xyzviewer-stage");
 
   const scene = new THREE.Scene();
@@ -471,17 +472,25 @@
   }
 
   fileInput.addEventListener("change", (event) => {
-    handleFile(event.target.files[0]);
+    const file = event.target.files?.[0];
+    if (file) {
+      selectedFile = file;
+      handleFile(file);
+    }
   });
 
   fileInput.addEventListener("input", (event) => {
     const file = event.target.files?.[0];
-    if (file) setStatus(`Selected ${file.name}. Tap Load if needed.`);
+    if (file) {
+      selectedFile = file;
+      setStatus(`Selected ${file.name}. Tap Load if needed.`);
+    }
   });
 
   if (loadButton) {
     loadButton.addEventListener("click", () => {
-      handleFile(fileInput.files?.[0]);
+      const file = selectedFile || fileInput.files?.[0];
+      if (file) handleFile(file);
     });
   }
 
