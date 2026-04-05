@@ -17,11 +17,6 @@ const toolboxEl = document.getElementById("toolbox");
 const toolboxToggle = document.getElementById("toolbox-toggle");
 const filePickerButton = document.getElementById("file-picker-button");
 const fullscreenButton = document.getElementById("fullscreen-button");
-const groupsButton = document.getElementById("groups-button");
-const groupsPanel = document.getElementById("groups-panel");
-const groupsClose = document.getElementById("groups-close");
-const groupsBody = document.getElementById("groups-body");
-const groupsEmpty = document.getElementById("groups-empty");
 
 if (!window.THREE) {
   setStatus("THREE failed to load.");
@@ -231,8 +226,6 @@ const isIOSMobile = isIOSDevice && /Mobile/.test(navigator.userAgent);
 const undoStack = [];
 const UNDO_LIMIT = 20;
 let pendingUndo = null;
-let groupList = [];
-let activeGroupId = null;
 
 function syncControlsEnabled() {
   if (!controls || controls.enabled === undefined) return;
@@ -432,8 +425,6 @@ function clearMolecule() {
   bondGroup = null;
   atomMeshList = [];
   atomInfoList = [];
-  groupList = [];
-  renderGroups();
   clearMeasurement();
 }
 
@@ -564,277 +555,6 @@ function updateMeasurementLine() {
   updateDistanceLabel();
 }
 
-function createAdjacency(atomList) {
-  const adjacency = Array.from({ length: atomList.length }, () => []);
-  for (let i = 0; i < atomList.length; i += 1) {
-    for (let j = i + 1; j < atomList.length; j += 1) {
-      const a = atomList[i];
-      const b = atomList[j];
-      const radiusA = covalentRadii[a.element] ?? 0.9;
-      const radiusB = covalentRadii[b.element] ?? 0.9;
-      const threshold = (radiusA + radiusB) * 1.2;
-      const distance = a.mesh.position.distanceTo(b.mesh.position);
-      if (distance > 0.1 && distance <= threshold) {
-        adjacency[i].push(j);
-        adjacency[j].push(i);
-      }
-    }
-  }
-  return adjacency;
-}
-
-function isPlanar(points, maxDistance = 0.25) {
-  if (points.length < 3) return false;
-  const centroid = new THREE.Vector3();
-  points.forEach((p) => centroid.add(p));
-  centroid.divideScalar(points.length);
-  const cov = [
-    [0, 0, 0],
-    [0, 0, 0],
-    [0, 0, 0],
-  ];
-  points.forEach((p) => {
-    const v = p.clone().sub(centroid);
-    cov[0][0] += v.x * v.x;
-    cov[0][1] += v.x * v.y;
-    cov[0][2] += v.x * v.z;
-    cov[1][0] += v.y * v.x;
-    cov[1][1] += v.y * v.y;
-    cov[1][2] += v.y * v.z;
-    cov[2][0] += v.z * v.x;
-    cov[2][1] += v.z * v.y;
-    cov[2][2] += v.z * v.z;
-  });
-  const normal = smallestEigenVector3(cov);
-  if (!normal) return false;
-  const n = normal.normalize();
-  for (let i = 0; i < points.length; i += 1) {
-    const distance = Math.abs(n.dot(points[i].clone().sub(centroid)));
-    if (distance > maxDistance) return false;
-  }
-  return true;
-}
-
-function smallestEigenVector3(matrix) {
-  const a = [
-    [matrix[0][0], matrix[0][1], matrix[0][2]],
-    [matrix[1][0], matrix[1][1], matrix[1][2]],
-    [matrix[2][0], matrix[2][1], matrix[2][2]],
-  ];
-  const v = [
-    [1, 0, 0],
-    [0, 1, 0],
-    [0, 0, 1],
-  ];
-  const maxIter = 20;
-  for (let iter = 0; iter < maxIter; iter += 1) {
-    let p = 0;
-    let q = 1;
-    let max = Math.abs(a[0][1]);
-    if (Math.abs(a[0][2]) > max) {
-      max = Math.abs(a[0][2]);
-      p = 0;
-      q = 2;
-    }
-    if (Math.abs(a[1][2]) > max) {
-      max = Math.abs(a[1][2]);
-      p = 1;
-      q = 2;
-    }
-    if (max < 1e-10) break;
-    const app = a[p][p];
-    const aqq = a[q][q];
-    const apq = a[p][q];
-    const phi = 0.5 * Math.atan2(2 * apq, aqq - app);
-    const c = Math.cos(phi);
-    const s = Math.sin(phi);
-    for (let k = 0; k < 3; k += 1) {
-      const aik = a[p][k];
-      const aqk = a[q][k];
-      a[p][k] = c * aik - s * aqk;
-      a[q][k] = s * aik + c * aqk;
-    }
-    for (let k = 0; k < 3; k += 1) {
-      const aik = a[k][p];
-      const aqk = a[k][q];
-      a[k][p] = c * aik - s * aqk;
-      a[k][q] = s * aik + c * aqk;
-    }
-    for (let k = 0; k < 3; k += 1) {
-      const vip = v[k][p];
-      const viq = v[k][q];
-      v[k][p] = c * vip - s * viq;
-      v[k][q] = s * vip + c * viq;
-    }
-  }
-  const eigenvalues = [a[0][0], a[1][1], a[2][2]];
-  let minIndex = 0;
-  if (eigenvalues[1] < eigenvalues[minIndex]) minIndex = 1;
-  if (eigenvalues[2] < eigenvalues[minIndex]) minIndex = 2;
-  return new THREE.Vector3(v[0][minIndex], v[1][minIndex], v[2][minIndex]);
-}
-
-function findCycles(length, nodes, adjacency) {
-  const cycles = new Set();
-  const results = [];
-  const dfs = (start, current, depth, path, visited) => {
-    if (depth === length) {
-      if (adjacency[current].includes(start)) {
-        const cycle = [...path].sort((a, b) => a - b);
-        const key = cycle.join("-");
-        if (!cycles.has(key)) {
-          cycles.add(key);
-          results.push([...path]);
-        }
-      }
-      return;
-    }
-    adjacency[current].forEach((next) => {
-      if (next < start) return;
-      if (visited.has(next)) return;
-      visited.add(next);
-      path.push(next);
-      dfs(start, next, depth + 1, path, visited);
-      path.pop();
-      visited.delete(next);
-    });
-  };
-  nodes.forEach((start) => {
-    const visited = new Set([start]);
-    dfs(start, start, 1, [start], visited);
-  });
-  return results;
-}
-
-function detectGroups() {
-  const groups = [];
-  const adjacency = createAdjacency(atomInfoList);
-  const used = new Set();
-  let counter = 1;
-
-  const addGroup = (type, atomIndices) => {
-    atomIndices.forEach((idx) => used.add(idx));
-    const anchorIndex = atomIndices.find((idx) =>
-      adjacency[idx].some((neighbor) => !atomIndices.includes(neighbor))
-    );
-    groups.push({
-      id: `${type}-${counter++}`,
-      type,
-      atomIndices,
-      anchorIndex: anchorIndex ?? atomIndices[0],
-      label: `${type} #${counter - 1}`,
-    });
-  };
-
-  const carbonNodes = atomInfoList
-    .map((atom, index) => (atom.element === "C" ? index : null))
-    .filter((value) => value !== null);
-  const cycles6 = findCycles(6, carbonNodes, adjacency);
-  const cycles5 = findCycles(5, carbonNodes, adjacency);
-
-  cycles6.forEach((cycle) => {
-    if (cycle.some((idx) => used.has(idx))) return;
-    const points = cycle.map((idx) => atomInfoList[idx].mesh.position.clone());
-    if (isPlanar(points, 0.25)) {
-      addGroup("Ph", cycle);
-    } else {
-      addGroup("Cyclohexyl", cycle);
-    }
-  });
-
-  cycles5.forEach((cycle) => {
-    if (cycle.some((idx) => used.has(idx))) return;
-    addGroup("Cyclopentyl", cycle);
-  });
-
-  for (let i = 0; i < atomInfoList.length; i += 1) {
-    if (used.has(i)) continue;
-    const atom = atomInfoList[i];
-    if (atom.element === "O") {
-      const neighbors = adjacency[i];
-      const hNeighbors = neighbors.filter((idx) => atomInfoList[idx].element === "H");
-      const heavyNeighbors = neighbors.filter((idx) => atomInfoList[idx].element !== "H");
-      if (hNeighbors.length === 1 && heavyNeighbors.length >= 1) {
-        addGroup("OH", [i, hNeighbors[0]]);
-      }
-    }
-  }
-
-  for (let i = 0; i < atomInfoList.length; i += 1) {
-    if (used.has(i)) continue;
-    const atom = atomInfoList[i];
-    if (atom.element === "N") {
-      const neighbors = adjacency[i];
-      const hNeighbors = neighbors.filter((idx) => atomInfoList[idx].element === "H");
-      const heavyNeighbors = neighbors.filter((idx) => atomInfoList[idx].element !== "H");
-      if (hNeighbors.length === 2 && heavyNeighbors.length >= 1) {
-        addGroup("NH2", [i, ...hNeighbors]);
-      }
-    }
-  }
-
-  for (let i = 0; i < atomInfoList.length; i += 1) {
-    if (used.has(i)) continue;
-    const atom = atomInfoList[i];
-    if (atom.element === "C") {
-      const neighbors = adjacency[i];
-      const hNeighbors = neighbors.filter((idx) => atomInfoList[idx].element === "H");
-      const heavyNeighbors = neighbors.filter((idx) => atomInfoList[idx].element !== "H");
-      if (hNeighbors.length === 3 && heavyNeighbors.length >= 1) {
-        addGroup("CH3", [i, ...hNeighbors]);
-      }
-    }
-  }
-
-  for (let i = 0; i < atomInfoList.length; i += 1) {
-    if (used.has(i)) continue;
-    const atom = atomInfoList[i];
-    if (atom.element === "C") {
-      const neighbors = adjacency[i];
-      const oNeighbors = neighbors.filter((idx) => atomInfoList[idx].element === "O");
-      if (oNeighbors.length === 2) {
-        const oWithH = oNeighbors.find((idx) =>
-          adjacency[idx].some((n) => atomInfoList[n].element === "H")
-        );
-        if (oWithH !== undefined) {
-          const hIndex = adjacency[oWithH].find((n) => atomInfoList[n].element === "H");
-          if (hIndex !== undefined) {
-            addGroup("COOH", [i, ...oNeighbors, hIndex]);
-          }
-        }
-      }
-    }
-  }
-
-  return groups;
-}
-
-function renderGroups() {
-  if (!groupsBody || !groupsEmpty) return;
-  groupsBody.innerHTML = "";
-  activeGroupId = null;
-  if (!groupList.length) {
-    groupsEmpty.style.display = "block";
-    return;
-  }
-  groupsEmpty.style.display = "none";
-  groupList.forEach((group) => {
-    const item = document.createElement("button");
-    item.className = "group-item";
-    item.type = "button";
-    item.textContent = group.label;
-    item.addEventListener("click", () => {
-      activeGroupId = group.id;
-      const meshes = group.atomIndices.map((idx) => atomInfoList[idx].mesh);
-      setEditSelection(meshes);
-      setStatus(`Group selected: ${group.label}.`);
-      document.querySelectorAll(".group-item").forEach((node) => {
-        node.classList.toggle("active", node === item);
-      });
-    });
-    groupsBody.appendChild(item);
-  });
-}
 
 function selectAtom(mesh) {
   if (selectedAtoms.includes(mesh)) return;
@@ -923,8 +643,6 @@ function loadXYZ(contents, filename = "file.xyz") {
   scene.add(moleculeGroup);
   resize();
   centerAndFrame(moleculeGroup);
-  groupList = detectGroups();
-  renderGroups();
   const bondNote = bondsSkipped ? " (bonds off on iOS)" : "";
   setStatus(`Loaded ${filename} (${atoms.length} atoms)${bondNote}.`);
   hudEl.style.display = "none";
@@ -1046,19 +764,6 @@ if (undoButton) {
   undoButton.addEventListener("click", undoMove);
 }
 
-if (groupsButton && groupsPanel) {
-  groupsButton.addEventListener("click", () => {
-    const active = groupsPanel.classList.toggle("active");
-    groupsPanel.setAttribute("aria-hidden", active ? "false" : "true");
-  });
-}
-
-if (groupsClose && groupsPanel) {
-  groupsClose.addEventListener("click", () => {
-    groupsPanel.classList.remove("active");
-    groupsPanel.setAttribute("aria-hidden", "true");
-  });
-}
 
 if (filePickerButton && fileInput) {
   filePickerButton.addEventListener("click", () => {
