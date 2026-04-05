@@ -526,6 +526,7 @@ function undoMove() {
     const anchorInfo = atomInfoList[snapshot.anchorIndex];
     if (anchorInfo) {
       anchorInfo.element = snapshot.anchorElement;
+      anchorInfo.radius = snapshot.anchorRadius ?? anchorInfo.radius;
       if (snapshot.anchorPosition) {
         anchorInfo.mesh.position.copy(snapshot.anchorPosition);
       }
@@ -919,8 +920,10 @@ function addGroupAtAtom(mesh) {
   if (anchorIndex < 0) return;
   const anchorInfo = atomInfoList[anchorIndex];
   const prevElement = anchorInfo.element;
+  const prevRadius = anchorInfo.radius;
   const prevPosition = anchorInfo.mesh.position.clone();
   anchorInfo.element = template.anchorElement;
+  anchorInfo.radius = covalentRadii[anchorInfo.element] ?? anchorInfo.radius;
   applyAtomStyle(anchorInfo.mesh, anchorInfo.element);
   const neighborData = computeNeighborDirection(anchorIndex);
   const neighborIndex = neighborData.neighborIndex;
@@ -974,6 +977,7 @@ function addGroupAtAtom(mesh) {
     type: "add-group",
     anchorIndex,
     anchorElement: prevElement,
+    anchorRadius: prevRadius,
     anchorPosition: prevPosition,
     added,
   });
