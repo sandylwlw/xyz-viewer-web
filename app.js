@@ -12,6 +12,7 @@ const editToggle = document.getElementById("edit-toggle");
 const exportButton = document.getElementById("export-button");
 const rotateMoleculeToggle = document.getElementById("rotate-molecule-toggle");
 const rotateToggle = document.getElementById("rotate-toggle");
+const undoButton = document.getElementById("undo-button");
 const toolboxEl = document.getElementById("toolbox");
 const toolboxToggle = document.getElementById("toolbox-toggle");
 const filePickerButton = document.getElementById("file-picker-button");
@@ -221,6 +222,9 @@ const pointerNDC = new THREE.Vector2();
 const tempVec = new THREE.Vector3();
 const tempQuat = new THREE.Quaternion();
 const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
+const undoStack = [];
+const UNDO_LIMIT = 20;
+let pendingUndo = null;
 
 function syncControlsEnabled() {
   if (!controls || controls.enabled === undefined) return;
@@ -480,6 +484,42 @@ function removeFromEditSelection(mesh) {
   editSelection = editSelection.filter((item) => item !== mesh);
 }
 
+function pushUndoSnapshot(snapshot) {
+  if (!snapshot || !snapshot.atoms?.length) return;
+  undoStack.push(snapshot);
+  if (undoStack.length > UNDO_LIMIT) {
+    undoStack.shift();
+  }
+}
+
+function finalizeUndoSnapshot() {
+  if (!pendingUndo) return;
+  const { atoms, before } = pendingUndo;
+  const after = atoms.map((mesh) => mesh.position.clone());
+  const changed = after.some((pos, index) => pos.distanceTo(before[index]) > 1e-6);
+  if (changed) {
+    pushUndoSnapshot({ atoms, before, after });
+  }
+  pendingUndo = null;
+}
+
+function undoMove() {
+  const snapshot = undoStack.pop();
+  if (!snapshot) {
+    setStatus("Nothing to undo.");
+    return;
+  }
+  snapshot.atoms.forEach((mesh, index) => {
+    mesh.position.copy(snapshot.before[index]);
+  });
+  if (bondGroup && showBonds && !bondsSkipped) {
+    rebuildBonds(atomInfoList, bondGroup, isIOS ? 8 : 16);
+    bondGroup.visible = true;
+  }
+  updateMeasurementLine();
+  setStatus("Undo complete.");
+}
+
 function updateDistanceLabel() {
   if (!distanceLine || !distanceLabel || !moleculeGroup) return;
   const positions = distanceLine.geometry.attributes.position.array;
@@ -718,6 +758,10 @@ if (exportButton) {
   exportButton.addEventListener("click", exportXYZ);
 }
 
+if (undoButton) {
+  undoButton.addEventListener("click", undoMove);
+}
+
 if (filePickerButton && fileInput) {
   filePickerButton.addEventListener("click", () => {
     fileInput.click();
@@ -732,6 +776,21 @@ if (fileInput) {
     }
   });
 }
+
+window.addEventListener("keydown", (event) => {
+  if (isIOSDevice) return;
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
+    const target = event.target;
+    if (
+      target &&
+      (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    undoMove();
+  }
+});
 
 function isFullscreen() {
   return !!(
@@ -946,6 +1005,10 @@ renderer?.domElement.addEventListener(
       rotateStartPositions = editSelection.map((mesh) => mesh.position.clone());
       rotateLastPoint = { x: event.clientX, y: event.clientY };
       rotateAccumAngle = 0;
+      pendingUndo = {
+        atoms: [...editSelection],
+        before: editSelection.map((mesh) => mesh.position.clone()),
+      };
       if (controls && controls.enabled !== undefined) {
         controls.enabled = false;
       }
@@ -961,6 +1024,10 @@ renderer?.domElement.addEventListener(
       }
       dragGroup = editSelection.length ? [...editSelection] : [hit];
       draggingAtom = hit;
+      pendingUndo = {
+        atoms: [...dragGroup],
+        before: dragGroup.map((mesh) => mesh.position.clone()),
+      };
       const rect = renderer.domElement.getBoundingClientRect();
       pointerNDC.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       pointerNDC.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -1069,6 +1136,7 @@ renderer?.domElement.addEventListener("pointerup", (event) => {
     rotateStartPositions = null;
     rotateLastPoint = null;
     rotateAccumAngle = 0;
+    finalizeUndoSnapshot();
     if (controls && controls.enabled !== undefined) {
       controls.enabled = true;
     }
@@ -1088,6 +1156,7 @@ renderer?.domElement.addEventListener("pointerup", (event) => {
     dragGroup = null;
     dragStartPoint = null;
     dragInitialPositions = null;
+    finalizeUndoSnapshot();
     if (controls && controls.enabled !== undefined) {
       controls.enabled = true;
     }

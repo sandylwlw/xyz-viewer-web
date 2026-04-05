@@ -64,6 +64,7 @@
           <input id="rotate-toggle" type="checkbox" />
           <span>Rotate selection</span>
         </label>
+        <button class="tool-button" id="undo-button" type="button">Undo</button>
         <div class="toolbox-hint">
           Edit mode: drag atoms to move, drag a box to select. Use Rotate molecule for whole view, Rotate selection for
           selected atoms.
@@ -107,7 +108,7 @@
       onload="window.__controlsLoaded=true;setBootStatus('OrbitControls loaded.')"
       onerror="document.getElementById('status').textContent='Failed to load OrbitControls.js'"
     ></script>
-    <script src="app.js?v=nonmodule-22"></script>
+    <script src="app.js?v=nonmodule-24"></script>
     <script>
       setTimeout(() => {
         if (window.__xyzViewerLegacyLoaded) return;
