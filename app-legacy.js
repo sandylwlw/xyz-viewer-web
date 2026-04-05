@@ -1,9 +1,16 @@
 /* global THREE */
 
 if (!window.__xyzViewerLoaded) {
+  const statusNode = document.getElementById("status");
+  if (!window.THREE) {
+    if (statusNode) {
+      statusNode.textContent = "THREE failed to load.";
+    }
+    return;
+  }
   window.__xyzViewerLegacyLoaded = true;
-  if (document.getElementById("status")) {
-    document.getElementById("status").textContent = "Legacy viewer booting...";
+  if (statusNode) {
+    statusNode.textContent = "Legacy viewer booting...";
   }
 
 const canvas = document.getElementById("viewer");

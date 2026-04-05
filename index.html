@@ -63,8 +63,20 @@
       window.__xyzViewerLegacyLoaded = false;
     </script>
     <script type="module" src="app.js"></script>
-    <script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.149.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="app-legacy.js"></script>
+    <script
+      src="https://unpkg.com/three@0.149.0/build/three.min.js"
+      onload="window.__threeLoaded=true;document.getElementById('status').textContent='Three loaded.'"
+      onerror="document.getElementById('status').textContent='Failed to load three.min.js'"
+    ></script>
+    <script
+      src="https://unpkg.com/three@0.149.0/examples/js/controls/OrbitControls.js"
+      onload="window.__controlsLoaded=true;document.getElementById('status').textContent='OrbitControls loaded.'"
+      onerror="document.getElementById('status').textContent='Failed to load OrbitControls.js'"
+    ></script>
+    <script
+      src="app-legacy.js"
+      onload="window.__legacyTagLoaded=true;document.getElementById('status').textContent='Legacy script loaded.'"
+      onerror="document.getElementById('status').textContent='Failed to load app-legacy.js'"
+    ></script>
   </body>
 </html>
