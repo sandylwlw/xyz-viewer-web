@@ -80,6 +80,7 @@
             <button class="tool-button" id="add-group-button" type="button">Add</button>
           </div>
         </div>
+        <button class="tool-button" id="delete-button" type="button">Delete</button>
         <button class="tool-button" id="undo-button" type="button">Undo</button>
         <div class="toolbox-hint">
           Edit mode: drag atoms to move, drag a box to select.
@@ -123,7 +124,7 @@
       onload="window.__controlsLoaded=true;setBootStatus('OrbitControls loaded.')"
       onerror="document.getElementById('status').textContent='Failed to load OrbitControls.js'"
     ></script>
-    <script src="app.js?v=nonmodule-51"></script>
+    <script src="app.js?v=nonmodule-52"></script>
     <script>
       setTimeout(() => {
         if (window.__xyzViewerLegacyLoaded) return;

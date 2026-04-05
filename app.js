@@ -19,6 +19,7 @@ const filePickerButton = document.getElementById("file-picker-button");
 const fullscreenButton = document.getElementById("fullscreen-button");
 const groupSelect = document.getElementById("group-select");
 const addGroupButton = document.getElementById("add-group-button");
+const deleteButton = document.getElementById("delete-button");
 
 if (!window.THREE) {
   setStatus("THREE failed to load.");
@@ -532,6 +533,15 @@ function undoMove() {
       }
       applyAtomStyle(anchorInfo.mesh, anchorInfo.element);
     }
+  } else if (snapshot.type === "delete") {
+    const restored = snapshot.removed || [];
+    restored.forEach((item) => {
+      const atomMesh = createAtomMesh(item.element, item.position);
+      moleculeGroup.add(atomMesh);
+      const info = { mesh: atomMesh, radius: item.radius ?? (covalentRadii[item.element] ?? 0.9), element: item.element };
+      atomInfoList.push(info);
+      atomMeshList.push(atomMesh);
+    });
   } else {
     snapshot.atoms.forEach((mesh, index) => {
       mesh.position.copy(snapshot.before[index]);
@@ -543,6 +553,45 @@ function undoMove() {
   }
   updateMeasurementLine();
   setStatus("Undo complete.");
+}
+
+function deleteSelectedAtoms() {
+  if (!editMode) {
+    setStatus("Enable Edit mode first.");
+    return;
+  }
+  if (!editSelection.length) {
+    setStatus("No atoms selected.");
+    return;
+  }
+  const removedInfos = [];
+  editSelection.forEach((mesh) => {
+    const index = atomInfoList.findIndex((info) => info.mesh === mesh);
+    if (index < 0) return;
+    const info = atomInfoList[index];
+    removedInfos.push({
+      mesh: info.mesh,
+      element: info.element,
+      position: info.mesh.position.clone(),
+      radius: info.radius,
+    });
+  });
+  if (!removedInfos.length) return;
+  removedInfos.forEach((info) => {
+    moleculeGroup.remove(info.mesh);
+    info.mesh.geometry?.dispose();
+    info.mesh.material?.dispose();
+  });
+  atomInfoList = atomInfoList.filter((info) => !removedInfos.some((item) => item.mesh === info.mesh));
+  atomMeshList = atomMeshList.filter((mesh) => !removedInfos.some((item) => item.mesh === mesh));
+  clearEditSelection();
+  clearMeasurement();
+  if (bondGroup && showBonds && !bondsSkipped) {
+    rebuildBonds(atomInfoList, bondGroup, isIOS ? 8 : 16);
+    bondGroup.visible = true;
+  }
+  pushUndoSnapshot({ type: "delete", removed: removedInfos });
+  setStatus(`Deleted ${removedInfos.length} atoms.`);
 }
 
 function updateDistanceLabel() {
@@ -1236,6 +1285,10 @@ if (undoButton) {
   undoButton.addEventListener("click", undoMove);
 }
 
+if (deleteButton) {
+  deleteButton.addEventListener("click", deleteSelectedAtoms);
+}
+
 
 if (filePickerButton && fileInput) {
   filePickerButton.addEventListener("click", () => {
@@ -1326,6 +1379,10 @@ window.addEventListener("keydown", (event) => {
   if (key === "r") {
     event.preventDefault();
     toggleCheckbox(rotateToggle);
+  }
+  if (key === "d") {
+    event.preventDefault();
+    deleteSelectedAtoms();
   }
 });
 
