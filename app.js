@@ -950,17 +950,40 @@ function addGroupAtAtom(mesh) {
     }
   }
 
-  const baseQuat = isRing && normal
+  let templateAtoms = template.atoms;
+  let baseQuat = isRing && normal
     ? new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal)
     : new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), direction);
-
-  const axis = isRing && normal ? normal.clone() : direction.clone();
+  let axis = isRing && normal ? normal.clone() : direction.clone();
+  if (selectedGroupType === "CH3") {
+    const bond = 1.09;
+    const tetra = [
+      new THREE.Vector3(1, 1, 1),
+      new THREE.Vector3(1, -1, -1),
+      new THREE.Vector3(-1, 1, -1),
+      new THREE.Vector3(-1, -1, 1),
+    ].map((v) => v.normalize());
+    let reserved = tetra[0];
+    let maxDot = reserved.dot(direction);
+    tetra.forEach((vec) => {
+      const dot = vec.dot(direction);
+      if (dot > maxDot) {
+        maxDot = dot;
+        reserved = vec;
+      }
+    });
+    baseQuat = new THREE.Quaternion().setFromUnitVectors(reserved, direction);
+    axis = direction.clone();
+    templateAtoms = tetra
+      .filter((vec) => vec !== reserved)
+      .map((vec) => ({ element: "H", position: vec.clone().multiplyScalar(bond) }));
+  }
   const anchorPos = anchorInfo.mesh.position;
-  const best = findBestRotation(template.atoms, baseQuat, axis, anchorPos, anchorIndex);
+  const best = findBestRotation(templateAtoms, baseQuat, axis, anchorPos, anchorIndex);
 
   const added = [];
-  const positions = best?.positions || template.atoms.map((atom) => atom.position.clone().applyQuaternion(baseQuat).add(anchorPos));
-  template.atoms.forEach((atom, idx) => {
+  const positions = best?.positions || templateAtoms.map((atom) => atom.position.clone().applyQuaternion(baseQuat).add(anchorPos));
+  templateAtoms.forEach((atom, idx) => {
     const atomMesh = createAtomMesh(atom.element, positions[idx]);
     moleculeGroup.add(atomMesh);
     const info = { mesh: atomMesh, radius: covalentRadii[atom.element] ?? 0.9, element: atom.element };
