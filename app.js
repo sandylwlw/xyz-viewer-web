@@ -7,6 +7,7 @@ const hudEl = document.getElementById("hud");
 const fileInput = document.getElementById("file-input");
 const loadButton = document.getElementById("load-button");
 const distanceLabel = document.getElementById("distance-label");
+const selectionBoxEl = document.getElementById("selection-box");
 const stageEl = document.querySelector(".stage");
 const demoButton = document.getElementById("demo-button");
 const resetButton = document.getElementById("reset-button");
@@ -195,6 +196,7 @@ let bondGroup = null;
 let atomMeshList = [];
 let atomInfoList = [];
 let selectedAtoms = [];
+let editSelection = [];
 let distanceLine = null;
 let showBonds = true;
 let bondsSkipped = false;
@@ -202,9 +204,15 @@ let editMode = false;
 let draggingAtom = null;
 let dragOffset = null;
 let dragPlane = null;
+let dragGroup = null;
+let dragStartPoint = null;
+let dragInitialPositions = null;
 let bondsHiddenForDrag = false;
+let selecting = false;
+let selectStart = null;
 const raycaster = new THREE.Raycaster();
 const pointerNDC = new THREE.Vector2();
+const tempVec = new THREE.Vector3();
 
 const demoXYZ = `12
 Demo: formamide
@@ -426,6 +434,25 @@ function clearMeasurement() {
   }
 }
 
+function clearEditSelection() {
+  editSelection.forEach((mesh) => {
+    if (mesh.material && mesh.material.emissive) {
+      mesh.material.emissive.setHex(0x000000);
+    }
+  });
+  editSelection = [];
+}
+
+function setEditSelection(meshes) {
+  clearEditSelection();
+  meshes.forEach((mesh) => {
+    if (mesh.material && mesh.material.emissive) {
+      mesh.material.emissive.setHex(0x0f766e);
+    }
+  });
+  editSelection = meshes;
+}
+
 function updateDistanceLabel() {
   if (!distanceLine || !distanceLabel || !moleculeGroup) return;
   const positions = distanceLine.geometry.attributes.position.array;
@@ -504,6 +531,16 @@ function pickAtomForDrag(clientX, clientY) {
   raycaster.setFromCamera(pointerNDC, camera);
   const intersections = raycaster.intersectObjects(atomMeshList, false);
   return intersections.length ? intersections[0].object : null;
+}
+
+function getScreenPosition(mesh) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  mesh.getWorldPosition(tempVec);
+  tempVec.project(camera);
+  return {
+    x: (tempVec.x * 0.5 + 0.5) * rect.width + rect.left,
+    y: (-tempVec.y * 0.5 + 0.5) * rect.height + rect.top,
+  };
 }
 
 function loadXYZ(contents, filename = "file.xyz") {
@@ -679,7 +716,13 @@ if (editToggle) {
   editToggle.checked = editMode;
   editToggle.addEventListener("change", () => {
     editMode = editToggle.checked;
-    setStatus(editMode ? "Edit mode on. Drag atoms to move." : "Edit mode off.");
+    if (editMode) {
+      clearMeasurement();
+      setStatus("Edit mode on. Drag to move, or drag a box to select.");
+    } else {
+      clearEditSelection();
+      setStatus("Edit mode off.");
+    }
   });
 }
 
@@ -788,56 +831,99 @@ let downPoint = null;
 renderer?.domElement.addEventListener(
   "pointerdown",
   (event) => {
-  downPoint = { x: event.clientX, y: event.clientY };
-  if (!editMode) return;
-  const hit = pickAtomForDrag(event.clientX, event.clientY);
-  if (!hit) return;
-  event.preventDefault();
-  event.stopPropagation();
-  event.stopImmediatePropagation?.();
-  const rect = renderer.domElement.getBoundingClientRect();
-  pointerNDC.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-  pointerNDC.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-  raycaster.setFromCamera(pointerNDC, camera);
-  draggingAtom = hit;
-  const normal = new THREE.Vector3();
-  camera.getWorldDirection(normal);
-  dragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, hit.position);
-  const intersection = new THREE.Vector3();
-  raycaster.ray.intersectPlane(dragPlane, intersection);
-  dragOffset = hit.position.clone().sub(intersection);
-  if (controls && controls.enabled !== undefined) {
-    controls.enabled = false;
-  }
-  if (bondGroup && bondGroup.visible) {
-    bondGroup.visible = false;
-    bondsHiddenForDrag = true;
-  }
+    downPoint = { x: event.clientX, y: event.clientY };
+    if (!editMode) return;
+    const hit = pickAtomForDrag(event.clientX, event.clientY);
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation?.();
+    if (hit) {
+      if (!editSelection.includes(hit)) {
+        setEditSelection([hit]);
+      }
+      dragGroup = editSelection.length ? [...editSelection] : [hit];
+      draggingAtom = hit;
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointerNDC.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointerNDC.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointerNDC, camera);
+      const normal = new THREE.Vector3();
+      camera.getWorldDirection(normal);
+      dragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, hit.position);
+      const intersection = new THREE.Vector3();
+      raycaster.ray.intersectPlane(dragPlane, intersection);
+      dragStartPoint = intersection.clone();
+      dragInitialPositions = dragGroup.map((mesh) => mesh.position.clone());
+      if (controls && controls.enabled !== undefined) {
+        controls.enabled = false;
+      }
+      if (bondGroup && bondGroup.visible) {
+        bondGroup.visible = false;
+        bondsHiddenForDrag = true;
+      }
+      return;
+    }
+
+    selecting = true;
+    selectStart = { x: event.clientX, y: event.clientY };
+    if (selectionBoxEl) {
+      selectionBoxEl.style.display = "block";
+      selectionBoxEl.style.left = `${selectStart.x}px`;
+      selectionBoxEl.style.top = `${selectStart.y}px`;
+      selectionBoxEl.style.width = "0px";
+      selectionBoxEl.style.height = "0px";
+    }
+    if (controls && controls.enabled !== undefined) {
+      controls.enabled = false;
+    }
   },
   { capture: true }
 );
 renderer?.domElement.addEventListener("pointermove", (event) => {
-  if (!draggingAtom || !dragPlane) return;
-  const rect = renderer.domElement.getBoundingClientRect();
-  pointerNDC.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-  pointerNDC.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-  raycaster.setFromCamera(pointerNDC, camera);
-  const intersection = new THREE.Vector3();
-  if (raycaster.ray.intersectPlane(dragPlane, intersection)) {
-    draggingAtom.position.copy(intersection.add(dragOffset));
-    const info = atomInfoList.find((item) => item.mesh === draggingAtom);
-    if (info) {
-      info.mesh.position.copy(draggingAtom.position);
+  if (dragGroup && dragPlane && dragStartPoint && dragInitialPositions) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation?.();
+    const rect = renderer.domElement.getBoundingClientRect();
+    pointerNDC.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    pointerNDC.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(pointerNDC, camera);
+    const intersection = new THREE.Vector3();
+    if (raycaster.ray.intersectPlane(dragPlane, intersection)) {
+      const delta = intersection.sub(dragStartPoint);
+      dragGroup.forEach((mesh, index) => {
+        const startPos = dragInitialPositions[index];
+        mesh.position.copy(startPos).add(delta);
+      });
+      updateMeasurementLine();
     }
-    updateMeasurementLine();
+    return;
+  }
+  if (selecting && selectStart) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation?.();
+    const left = Math.min(selectStart.x, event.clientX);
+    const top = Math.min(selectStart.y, event.clientY);
+    const width = Math.abs(selectStart.x - event.clientX);
+    const height = Math.abs(selectStart.y - event.clientY);
+    if (selectionBoxEl) {
+      selectionBoxEl.style.left = `${left}px`;
+      selectionBoxEl.style.top = `${top}px`;
+      selectionBoxEl.style.width = `${width}px`;
+      selectionBoxEl.style.height = `${height}px`;
+    }
   }
 });
 renderer?.domElement.addEventListener("pointerup", (event) => {
   if (!downPoint) return;
-  if (draggingAtom) {
+  if (dragGroup) {
     draggingAtom = null;
     dragPlane = null;
     dragOffset = null;
+    dragGroup = null;
+    dragStartPoint = null;
+    dragInitialPositions = null;
     if (controls && controls.enabled !== undefined) {
       controls.enabled = true;
     }
@@ -847,6 +933,41 @@ renderer?.domElement.addEventListener("pointerup", (event) => {
       bondsHiddenForDrag = false;
     }
     updateMeasurementLine();
+    downPoint = null;
+    return;
+  }
+  if (selecting) {
+    selecting = false;
+    const dx = event.clientX - (selectStart?.x ?? event.clientX);
+    const dy = event.clientY - (selectStart?.y ?? event.clientY);
+    const width = Math.abs(dx);
+    const height = Math.abs(dy);
+    if (selectionBoxEl) {
+      selectionBoxEl.style.display = "none";
+    }
+    if (controls && controls.enabled !== undefined) {
+      controls.enabled = true;
+    }
+    if (width < 5 && height < 5) {
+      clearEditSelection();
+      downPoint = null;
+      return;
+    }
+    const left = Math.min(selectStart?.x ?? 0, event.clientX);
+    const right = Math.max(selectStart?.x ?? 0, event.clientX);
+    const top = Math.min(selectStart?.y ?? 0, event.clientY);
+    const bottom = Math.max(selectStart?.y ?? 0, event.clientY);
+    const selected = atomMeshList.filter((mesh) => {
+      const screen = getScreenPosition(mesh);
+      return screen.x >= left && screen.x <= right && screen.y >= top && screen.y <= bottom;
+    });
+    if (selected.length) {
+      setEditSelection(selected);
+      setStatus(`Selected ${selected.length} atoms.`);
+    } else {
+      clearEditSelection();
+      setStatus("No atoms selected.");
+    }
     downPoint = null;
     return;
   }

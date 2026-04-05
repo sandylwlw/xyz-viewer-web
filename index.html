@@ -39,6 +39,7 @@
     <main class="stage">
       <canvas id="viewer"></canvas>
       <div class="distance-label" id="distance-label"></div>
+      <div class="selection-box" id="selection-box" aria-hidden="true"></div>
       <section class="hud" id="hud">
         <div class="hud-title">Load an .xyz file</div>
         <div class="hud-text">
@@ -65,7 +66,7 @@
           <input id="edit-toggle" type="checkbox" />
           <span>Edit mode</span>
         </label>
-        <div class="toolbox-hint">Edit mode: drag atoms to move. Orbit disabled while dragging.</div>
+        <div class="toolbox-hint">Edit mode: drag atoms to move, or drag a box to select.</div>
       </section>
     </main>
 
@@ -101,7 +102,7 @@
       onload="window.__controlsLoaded=true;setBootStatus('OrbitControls loaded.')"
       onerror="document.getElementById('status').textContent='Failed to load OrbitControls.js'"
     ></script>
-    <script src="app.js?v=nonmodule-2"></script>
+    <script src="app.js?v=nonmodule-3"></script>
     <script>
       setTimeout(() => {
         if (window.__xyzViewerLegacyLoaded) return;

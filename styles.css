@@ -210,6 +210,16 @@ body {
   z-index: 3;
 }
 
+.selection-box {
+  position: absolute;
+  border: 1px dashed rgba(15, 118, 110, 0.8);
+  background: rgba(45, 212, 191, 0.12);
+  border-radius: 8px;
+  pointer-events: none;
+  display: none;
+  z-index: 3;
+}
+
 .hud {
   position: absolute;
   top: 24px;
