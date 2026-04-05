@@ -620,22 +620,26 @@ function deleteSelectedAtoms() {
   setStatus(`Deleted ${removedInfos.length} atoms.`);
 }
 
-function setAddGroupMode(enabled, source = "desktop") {
-  if (!enabled) return;
-  addGroupMode = true;
-  addGroupButton?.classList.add("active");
-  if (groupDrawer) {
+function setAddGroupMode(enabled) {
+  addGroupMode = enabled;
+  addGroupButton?.classList.toggle("active", addGroupMode);
+  if (groupDrawer && addGroupMode) {
     groupDrawer.classList.add("active");
     groupDrawer.setAttribute("aria-hidden", "false");
   }
-  if (!editMode) {
-    editMode = true;
-    if (editToggle) editToggle.checked = true;
+  if (addGroupMode) {
+    if (!editMode) {
+      editMode = true;
+      if (editToggle) editToggle.checked = true;
+    }
+    rotateMoleculeMode = false;
+    if (rotateMoleculeToggle) rotateMoleculeToggle.checked = false;
+    controls && controls.enabled !== undefined && (controls.enabled = false);
+    setStatus(`Click an atom to replace with ${selectedGroupType}.`);
+  } else {
+    syncControlsEnabled();
+    setStatus("Add mode off.");
   }
-  rotateMoleculeMode = false;
-  if (rotateMoleculeToggle) rotateMoleculeToggle.checked = false;
-  controls && controls.enabled !== undefined && (controls.enabled = false);
-  setStatus(`Click an atom to replace with ${selectedGroupType}.`);
 }
 
 function updateDistanceLabel() {
@@ -1371,13 +1375,13 @@ if (groupSelect) {
     if (groupSelectMobile) {
       groupSelectMobile.value = selectedGroupType;
     }
-    setAddGroupMode(true, "desktop");
+    setAddGroupMode(true);
   });
 }
 
 if (addGroupButton) {
   addGroupButton.addEventListener("click", () => {
-    setAddGroupMode(true, "desktop");
+    setAddGroupMode(!addGroupMode);
   });
 }
 
@@ -1394,13 +1398,13 @@ if (groupSelectMobile) {
     if (groupSelect) {
       groupSelect.value = selectedGroupType;
     }
-    setAddGroupMode(true, "mobile");
+    setAddGroupMode(true);
   });
 }
 
 if (addGroupMobile) {
   addGroupMobile.addEventListener("click", () => {
-    setAddGroupMode(true, "mobile");
+    setAddGroupMode(!addGroupMode);
   });
 }
 
