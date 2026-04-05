@@ -272,6 +272,15 @@ body {
   flex-direction: column;
   gap: 12px;
   min-width: 200px;
+  max-width: 240px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.toolbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .toolbox-title {
@@ -280,6 +289,17 @@ body {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-soft);
+}
+
+.toolbox-toggle {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: white;
+  color: #0f172a;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .toolbox-grid {
@@ -323,6 +343,19 @@ body {
   font-size: 11px;
   color: var(--ink-soft);
   line-height: 1.4;
+}
+
+.toolbox.collapsed {
+  opacity: 0.7;
+  padding: 10px 12px;
+  min-width: 0;
+  max-width: 140px;
+}
+
+.toolbox.collapsed .toolbox-grid,
+.toolbox.collapsed .tool-toggle,
+.toolbox.collapsed .toolbox-hint {
+  display: none;
 }
 
 

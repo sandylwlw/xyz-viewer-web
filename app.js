@@ -17,6 +17,8 @@ const bondToggle = document.getElementById("bond-toggle");
 const editToggle = document.getElementById("edit-toggle");
 const rotateMoleculeToggle = document.getElementById("rotate-molecule-toggle");
 const rotateToggle = document.getElementById("rotate-toggle");
+const toolboxEl = document.getElementById("toolbox");
+const toolboxToggle = document.getElementById("toolbox-toggle");
 let selectedFile = null;
 let selectedFileName = "";
 
@@ -807,6 +809,13 @@ if (clearMeasureButton) {
 
 if (snapshotButton) {
   snapshotButton.addEventListener("click", saveSnapshot);
+}
+
+if (toolboxToggle && toolboxEl) {
+  toolboxToggle.addEventListener("click", () => {
+    const collapsed = toolboxEl.classList.toggle("collapsed");
+    toolboxToggle.textContent = collapsed ? "Show" : "Hide";
+  });
 }
 
 window.addEventListener("keydown", (event) => {

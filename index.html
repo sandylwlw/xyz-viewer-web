@@ -51,7 +51,10 @@
         </div>
       </section>
       <section class="toolbox" id="toolbox">
-        <div class="toolbox-title">Tools</div>
+        <div class="toolbox-header">
+          <div class="toolbox-title">Tools</div>
+          <button class="toolbox-toggle" id="toolbox-toggle" type="button">Hide</button>
+        </div>
         <div class="toolbox-grid">
           <button class="tool-button" id="demo-button" type="button">Load demo</button>
           <button class="tool-button" id="reset-button" type="button">Reset view</button>
@@ -113,7 +116,7 @@
       onload="window.__controlsLoaded=true;setBootStatus('OrbitControls loaded.')"
       onerror="document.getElementById('status').textContent='Failed to load OrbitControls.js'"
     ></script>
-    <script src="app.js?v=nonmodule-7"></script>
+    <script src="app.js?v=nonmodule-8"></script>
     <script>
       setTimeout(() => {
         if (window.__xyzViewerLegacyLoaded) return;
