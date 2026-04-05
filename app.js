@@ -799,6 +799,37 @@ function handleUndoShortcut(event) {
 document.addEventListener("keydown", handleUndoShortcut, { capture: true });
 window.addEventListener("keydown", handleUndoShortcut, { capture: true });
 
+function toggleCheckbox(el) {
+  if (!el) return;
+  el.checked = !el.checked;
+  el.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+window.addEventListener("keydown", (event) => {
+  if (isIOSMobile) return;
+  if (event.metaKey || event.ctrlKey || event.altKey) return;
+  const target = event.target;
+  if (
+    target &&
+    (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+  ) {
+    return;
+  }
+  const key = event.key?.toLowerCase();
+  if (key === "e") {
+    event.preventDefault();
+    toggleCheckbox(editToggle);
+  }
+  if (key === "s") {
+    event.preventDefault();
+    toggleCheckbox(rotateMoleculeToggle);
+  }
+  if (key === "r") {
+    event.preventDefault();
+    toggleCheckbox(rotateToggle);
+  }
+});
+
 document.addEventListener(
   "beforeinput",
   (event) => {
