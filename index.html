@@ -64,15 +64,23 @@
           <input id="rotate-toggle" type="checkbox" />
           <span>Rotate selection</span>
         </label>
+        <button class="tool-button groups-button" id="groups-button" type="button">Groups</button>
         <button class="tool-button" id="undo-button" type="button">Undo</button>
         <div class="toolbox-hint">
-          Edit mode: drag atoms to move, drag a box to select. Use Spin molecule for whole view, Rotate selection for
-          selected atoms.
+          Edit mode: drag atoms to move, drag a box to select. Use Groups for common fragments.
         </div>
         <div class="toolbox-actions-row">
           <button class="tool-button" id="fullscreen-button" type="button">Full screen</button>
           <button class="tool-button" id="export-button" type="button">Export</button>
         </div>
+      </section>
+      <section class="groups-panel" id="groups-panel" aria-hidden="true">
+        <div class="groups-header">
+          <div class="groups-title">Groups</div>
+          <button class="groups-close" id="groups-close" type="button">Close</button>
+        </div>
+        <div class="groups-body" id="groups-body"></div>
+        <div class="groups-empty" id="groups-empty">No groups found.</div>
       </section>
     </main>
 
@@ -108,7 +116,7 @@
       onload="window.__controlsLoaded=true;setBootStatus('OrbitControls loaded.')"
       onerror="document.getElementById('status').textContent='Failed to load OrbitControls.js'"
     ></script>
-    <script src="app.js?v=nonmodule-30"></script>
+    <script src="app.js?v=nonmodule-32"></script>
     <script>
       setTimeout(() => {
         if (window.__xyzViewerLegacyLoaded) return;
