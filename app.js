@@ -1459,6 +1459,10 @@ window.addEventListener("keydown", (event) => {
     event.preventDefault();
     toggleCheckbox(rotateToggle);
   }
+  if (key === "a") {
+    event.preventDefault();
+    setAddGroupMode(!addGroupMode);
+  }
   if (key === "d") {
     event.preventDefault();
     deleteSelectedAtoms();
