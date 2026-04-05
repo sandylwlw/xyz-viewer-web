@@ -54,9 +54,30 @@
       </div>
     </footer>
 
+    <script>
+      const statusEl = document.getElementById("status");
+      if (statusEl) {
+        statusEl.textContent = "Booting viewer...";
+      }
+      window.__xyzViewerLoaded = false;
+      window.__xyzViewerLegacyLoaded = false;
+      setTimeout(() => {
+        if (window.__xyzViewerLoaded || window.__xyzViewerLegacyLoaded) return;
+        if (statusEl) {
+          statusEl.textContent = "Boot failed. Loading legacy viewer...";
+        }
+        const scripts = [
+          "https://unpkg.com/three@0.149.0/build/three.min.js",
+          "https://unpkg.com/three@0.149.0/examples/js/controls/OrbitControls.js",
+          "app-legacy.js",
+        ];
+        scripts.forEach((src) => {
+          const tag = document.createElement("script");
+          tag.src = src;
+          document.body.appendChild(tag);
+        });
+      }, 1500);
+    </script>
     <script type="module" src="app.js"></script>
-    <script nomodule src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
-    <script nomodule src="https://unpkg.com/three@0.149.0/examples/js/controls/OrbitControls.js"></script>
-    <script nomodule src="app-legacy.js"></script>
   </body>
 </html>

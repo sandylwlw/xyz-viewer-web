@@ -1,5 +1,7 @@
 /* global THREE */
 
+window.__xyzViewerLegacyLoaded = true;
+
 const canvas = document.getElementById("viewer");
 const statusEl = document.getElementById("status");
 const hudEl = document.getElementById("hud");
