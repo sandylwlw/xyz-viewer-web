@@ -313,6 +313,16 @@ body.pseudo-fullscreen .toolbox {
   line-height: 1.4;
 }
 
+.toolbox-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbox-actions-row .tool-button {
+  flex: 1;
+}
+
 .toolbox.collapsed {
   opacity: 0.7;
   padding: 10px 12px;
