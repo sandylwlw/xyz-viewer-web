@@ -222,6 +222,7 @@ const pointerNDC = new THREE.Vector2();
 const tempVec = new THREE.Vector3();
 const tempQuat = new THREE.Quaternion();
 const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
+const isIOSMobile = isIOSDevice && /Mobile/.test(navigator.userAgent);
 const undoStack = [];
 const UNDO_LIMIT = 20;
 let pendingUndo = null;
@@ -777,20 +778,24 @@ if (fileInput) {
   });
 }
 
-window.addEventListener("keydown", (event) => {
-  if (isIOSDevice) return;
-  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
-    const target = event.target;
-    if (
-      target &&
-      (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
-    ) {
-      return;
+window.addEventListener(
+  "keydown",
+  (event) => {
+    if (isIOSMobile) return;
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
+      const target = event.target;
+      if (
+        target &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+      ) {
+        return;
+      }
+      event.preventDefault();
+      undoMove();
     }
-    event.preventDefault();
-    undoMove();
-  }
-});
+  },
+  { capture: true }
+);
 
 function isFullscreen() {
   return !!(
