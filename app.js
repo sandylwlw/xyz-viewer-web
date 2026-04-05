@@ -1006,10 +1006,16 @@ function addGroupAtAtom(mesh) {
   }
   if (selectedGroupType === "OH") {
     const bond = 0.98;
+    const theta = (104.5 * Math.PI) / 180;
     const targetDir = direction.clone().negate();
     baseQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), targetDir);
     axis = targetDir.clone();
-    templateAtoms = [{ element: "H", position: new THREE.Vector3(0, 0, bond) }];
+    templateAtoms = [
+      {
+        element: "H",
+        position: new THREE.Vector3(Math.sin(theta), 0, Math.cos(theta)).multiplyScalar(bond),
+      },
+    ];
   }
   const anchorPos = anchorInfo.mesh.position;
   const best = findBestRotation(templateAtoms, baseQuat, axis, anchorPos, anchorIndex);
