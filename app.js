@@ -621,29 +621,21 @@ function deleteSelectedAtoms() {
 }
 
 function setAddGroupMode(enabled, source = "desktop") {
-  addGroupMode = enabled;
-  addGroupButton?.classList.toggle("active", addGroupMode);
+  if (!enabled) return;
+  addGroupMode = true;
+  addGroupButton?.classList.add("active");
   if (groupDrawer) {
-    groupDrawer.classList.toggle("active", addGroupMode);
-    groupDrawer.setAttribute("aria-hidden", addGroupMode ? "false" : "true");
+    groupDrawer.classList.add("active");
+    groupDrawer.setAttribute("aria-hidden", "false");
   }
-  if (addGroupMode) {
-    if (!editMode) {
-      editMode = true;
-      if (editToggle) editToggle.checked = true;
-    }
-    rotateMoleculeMode = false;
-    if (rotateMoleculeToggle) rotateMoleculeToggle.checked = false;
-    controls && controls.enabled !== undefined && (controls.enabled = false);
-    setStatus(`Click an atom to replace with ${selectedGroupType}.`);
-  } else {
-    syncControlsEnabled();
-    if (source === "mobile") {
-      groupDrawer?.classList.remove("active");
-      groupDrawer?.setAttribute("aria-hidden", "true");
-    }
-    setStatus("Add group cancelled.");
+  if (!editMode) {
+    editMode = true;
+    if (editToggle) editToggle.checked = true;
   }
+  rotateMoleculeMode = false;
+  if (rotateMoleculeToggle) rotateMoleculeToggle.checked = false;
+  controls && controls.enabled !== undefined && (controls.enabled = false);
+  setStatus(`Click an atom to replace with ${selectedGroupType}.`);
 }
 
 function updateDistanceLabel() {
@@ -1033,7 +1025,6 @@ function addGroupAtAtom(mesh) {
     setStatus("Load a molecule first.");
     return;
   }
-  addGroupMode = false;
   const template = groupTemplates[selectedGroupType] || groupTemplates.H;
   const anchorIndex = atomInfoList.findIndex((info) => info.mesh === mesh);
   if (anchorIndex < 0) return;
@@ -1380,12 +1371,13 @@ if (groupSelect) {
     if (groupSelectMobile) {
       groupSelectMobile.value = selectedGroupType;
     }
+    setAddGroupMode(true, "desktop");
   });
 }
 
 if (addGroupButton) {
   addGroupButton.addEventListener("click", () => {
-    setAddGroupMode(!addGroupMode, "desktop");
+    setAddGroupMode(true, "desktop");
   });
 }
 
@@ -1402,6 +1394,7 @@ if (groupSelectMobile) {
     if (groupSelect) {
       groupSelect.value = selectedGroupType;
     }
+    setAddGroupMode(true, "mobile");
   });
 }
 
@@ -1687,7 +1680,6 @@ renderer?.domElement.addEventListener(
     }
     if (addGroupMode && hit) {
       addGroupAtAtom(hit);
-      setAddGroupMode(false, "mobile");
       downPoint = null;
       return;
     }
