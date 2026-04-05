@@ -368,7 +368,7 @@ body {
   }
 
   .stage {
-    margin: 0 8px 8px;
+    margin: 0 8px 88px;
     height: 70vh;
     min-height: 280px;
   }
@@ -382,9 +382,13 @@ body {
   }
 
   .toolbox {
-    position: static;
-    margin: 0 12px 12px;
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    margin: 0;
     width: auto;
+    z-index: 4;
   }
 
   .footer {
