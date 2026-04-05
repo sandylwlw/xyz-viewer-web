@@ -565,7 +565,8 @@ function deleteSelectedAtoms() {
     return;
   }
   const removedInfos = [];
-  editSelection.forEach((mesh) => {
+  const uniqueMeshes = Array.from(new Set(editSelection));
+  uniqueMeshes.forEach((mesh) => {
     const index = atomInfoList.findIndex((info) => info.mesh === mesh);
     if (index < 0) return;
     const info = atomInfoList[index];
@@ -583,7 +584,14 @@ function deleteSelectedAtoms() {
     info.mesh.material?.dispose();
   });
   atomInfoList = atomInfoList.filter((info) => !removedInfos.some((item) => item.mesh === info.mesh));
-  atomMeshList = atomMeshList.filter((mesh) => !removedInfos.some((item) => item.mesh === mesh));
+  atomMeshList = atomInfoList.map((info) => info.mesh);
+  moleculeGroup.children
+    .filter((child) => child.isMesh && !atomMeshList.includes(child) && child.geometry?.type === "SphereGeometry")
+    .forEach((child) => {
+      moleculeGroup.remove(child);
+      child.geometry?.dispose();
+      child.material?.dispose();
+    });
   clearEditSelection();
   clearMeasurement();
   if (bondGroup && showBonds && !bondsSkipped) {
