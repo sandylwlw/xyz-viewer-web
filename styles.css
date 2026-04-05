@@ -222,44 +222,6 @@ body {
   border-radius: 10px;
 }
 
-.hud-paste {
-  margin-top: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.hud-paste-title {
-  font-weight: 600;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink-soft);
-}
-
-#xyz-text {
-  width: 100%;
-  border-radius: 12px;
-  border: 1px solid var(--panel-border);
-  padding: 10px 12px;
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
-  font-size: 13px;
-  line-height: 1.4;
-  background: rgba(255, 255, 255, 0.8);
-  resize: vertical;
-}
-
-.hud-paste-button {
-  align-self: flex-start;
-  border: none;
-  background: #0f172a;
-  color: white;
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 12px;
-  cursor: pointer;
-}
 
 
 .footer {
@@ -290,6 +252,8 @@ body {
 
   .stage {
     margin: 0 14px 12px;
+    height: 60vh;
+    min-height: 320px;
   }
 
   .hud {

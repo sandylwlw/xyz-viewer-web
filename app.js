@@ -6,8 +6,6 @@ const statusEl = document.getElementById("status");
 const hudEl = document.getElementById("hud");
 const fileInput = document.getElementById("file-input");
 const loadButton = document.getElementById("load-button");
-const textInput = document.getElementById("xyz-text");
-const loadTextButton = document.getElementById("load-text");
 let selectedFile = null;
 
 const scene = new THREE.Scene();
@@ -17,6 +15,9 @@ const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 2000);
 camera.position.set(0, 0, 60);
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+if (!window.WebGLRenderingContext) {
+  setStatus("WebGL not supported in this browser.");
+}
 let renderer = null;
 try {
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -220,10 +221,14 @@ function loadXYZ(contents, filename = "file.xyz") {
   }
   moleculeGroup = buildMolecule(atoms);
   scene.add(moleculeGroup);
+  resize();
   centerAndFrame(moleculeGroup);
   const bondNote = isIOS && atoms.length > 1200 ? " (bonds off on iOS)" : "";
   setStatus(`Loaded ${filename} (${atoms.length} atoms)${bondNote}.`);
   hudEl.style.display = "none";
+  if (renderer) {
+    renderer.render(scene, camera);
+  }
 }
 
 function handleFile(file) {
@@ -233,15 +238,6 @@ function handleFile(file) {
   reader.onload = () => loadXYZ(reader.result, file.name);
   reader.onerror = () => setStatus("Failed to read the file.");
   reader.readAsText(file);
-}
-
-function handleText() {
-  const contents = textInput?.value.trim();
-  if (!contents) {
-    setStatus("Paste XYZ content first.");
-    return;
-  }
-  loadXYZ(contents, "pasted.xyz");
 }
 
 function bindFileInput() {
@@ -279,10 +275,6 @@ function bindFileInput() {
 
 if (!bindFileInput()) {
   window.addEventListener("DOMContentLoaded", bindFileInput, { once: true });
-}
-
-if (loadTextButton) {
-  loadTextButton.addEventListener("click", handleText);
 }
 
 
