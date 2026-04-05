@@ -25,6 +25,9 @@ const groupDrawerToggle = document.getElementById("group-drawer-toggle");
 const groupDrawerPanel = document.getElementById("group-drawer-panel");
 const groupSelectMobile = document.getElementById("group-select-mobile");
 const addGroupMobile = document.getElementById("add-group-mobile");
+const mobileEditButton = document.getElementById("mobile-edit");
+const mobileSpinButton = document.getElementById("mobile-spin");
+const mobileRotateButton = document.getElementById("mobile-rotate");
 
 if (!window.THREE) {
   setStatus("THREE failed to load.");
@@ -1303,6 +1306,9 @@ if (editToggle) {
       syncControlsEnabled();
       setStatus("Edit mode off.");
     }
+    mobileEditButton?.classList.toggle("active", editMode);
+    mobileSpinButton?.classList.toggle("active", rotateMoleculeMode);
+    mobileRotateButton?.classList.toggle("active", rotateMode);
   });
 }
 
@@ -1319,6 +1325,7 @@ if (rotateMoleculeToggle) {
     if (selectionBoxEl) selectionBoxEl.style.display = "none";
     syncControlsEnabled();
     setStatus(rotateMoleculeMode ? "Spin molecule enabled." : "Spin molecule disabled.");
+    mobileSpinButton?.classList.toggle("active", rotateMoleculeMode);
   });
 }
 
@@ -1335,6 +1342,7 @@ if (rotateToggle) {
     }
     syncControlsEnabled();
     setStatus(rotateMode ? "Rotate selection enabled." : "Rotate selection disabled.");
+    mobileRotateButton?.classList.toggle("active", rotateMode);
   });
 }
 
@@ -1408,7 +1416,25 @@ if (groupSelectMobile) {
 
 if (addGroupMobile) {
   addGroupMobile.addEventListener("click", () => {
-    setAddGroupMode(false);
+    setAddGroupMode(!addGroupMode);
+  });
+}
+
+if (mobileEditButton) {
+  mobileEditButton.addEventListener("click", () => {
+    toggleCheckbox(editToggle);
+  });
+}
+
+if (mobileSpinButton) {
+  mobileSpinButton.addEventListener("click", () => {
+    toggleCheckbox(rotateMoleculeToggle);
+  });
+}
+
+if (mobileRotateButton) {
+  mobileRotateButton.addEventListener("click", () => {
+    toggleCheckbox(rotateToggle);
   });
 }
 

@@ -350,6 +350,26 @@ body.pseudo-fullscreen .toolbox {
   flex: 1;
 }
 
+.mobile-controls {
+  display: none;
+}
+
+.mobile-toggle {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f172a;
+  padding: 8px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 12px 20px rgba(15, 23, 42, 0.08);
+}
+
+.mobile-toggle.active {
+  border-color: rgba(15, 118, 110, 0.5);
+  box-shadow: 0 14px 24px rgba(15, 118, 110, 0.2);
+}
+
 .group-adder {
   display: flex;
   flex-direction: column;
@@ -498,6 +518,20 @@ body.pseudo-fullscreen .toolbox {
 
   .group-adder {
     display: none;
+  }
+
+  .toolbox .tool-toggle {
+    display: none;
+  }
+
+  .mobile-controls {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 6;
   }
 
   .group-drawer {

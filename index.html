@@ -33,6 +33,11 @@
       <canvas id="viewer" tabindex="0"></canvas>
       <div class="distance-label" id="distance-label"></div>
       <div class="selection-box" id="selection-box" aria-hidden="true"></div>
+      <div class="mobile-controls" id="mobile-controls">
+        <button class="mobile-toggle" id="mobile-edit" type="button">Edit</button>
+        <button class="mobile-toggle" id="mobile-spin" type="button">Spin</button>
+        <button class="mobile-toggle" id="mobile-rotate" type="button">Rotate</button>
+      </div>
       <section class="hud" id="hud">
         <div class="hud-title">Load an .xyz file</div>
         <div class="hud-text">
@@ -151,7 +156,7 @@
       onload="window.__controlsLoaded=true;setBootStatus('OrbitControls loaded.')"
       onerror="document.getElementById('status').textContent='Failed to load OrbitControls.js'"
     ></script>
-    <script src="app.js?v=nonmodule-67"></script>
+    <script src="app.js?v=nonmodule-69"></script>
     <script>
       setTimeout(() => {
         if (window.__xyzViewerLegacyLoaded) return;
