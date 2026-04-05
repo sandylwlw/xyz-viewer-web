@@ -638,6 +638,10 @@ function setAddGroupMode(enabled) {
     setStatus(`Click an atom to replace with ${selectedGroupType}.`);
   } else {
     syncControlsEnabled();
+    if (groupDrawer) {
+      groupDrawer.classList.remove("active");
+      groupDrawer.setAttribute("aria-hidden", "true");
+    }
     setStatus("Add mode off.");
   }
 }
