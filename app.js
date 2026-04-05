@@ -996,8 +996,9 @@ function addGroupAtAtom(mesh) {
       );
     const v1 = makeVector(phi);
     const v2 = makeVector(-phi);
-    baseQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), direction);
-    axis = direction.clone();
+    const targetDir = direction.clone().negate();
+    baseQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), targetDir);
+    axis = targetDir.clone();
     templateAtoms = [
       { element: "H", position: v1.clone().multiplyScalar(bond) },
       { element: "H", position: v2.clone().multiplyScalar(bond) },
