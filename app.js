@@ -225,6 +225,7 @@ function loadXYZ(contents, filename = "file.xyz") {
 
 function handleFile(file) {
   if (!file) return;
+  setStatus(`Reading ${file.name} (${file.size} bytes)...`);
   const reader = new FileReader();
   reader.onload = () => loadXYZ(reader.result, file.name);
   reader.onerror = () => setStatus("Failed to read the file.");
@@ -236,15 +237,27 @@ function bindFileInput() {
   const button = document.getElementById("load-button");
   if (!input) return false;
   input.addEventListener("change", (event) => {
-    handleFile(event.target.files[0]);
+    const file = event.target.files?.[0];
+    if (!file) {
+      setStatus("No file selected.");
+      return;
+    }
+    handleFile(file);
   });
   input.addEventListener("input", (event) => {
     const file = event.target.files?.[0];
-    if (file) setStatus(`Selected ${file.name}. Tap Load if needed.`);
+    if (file) {
+      setStatus(`Selected ${file.name} (${file.size} bytes). Tap Load if needed.`);
+    }
   });
   if (button) {
     button.addEventListener("click", () => {
-      handleFile(input.files?.[0]);
+      const file = input.files?.[0];
+      if (!file) {
+        setStatus("No file selected. Tap Choose File first.");
+        return;
+      }
+      handleFile(file);
     });
   }
   return true;
