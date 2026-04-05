@@ -72,18 +72,18 @@
     </script>
     <script type="module" src="app.js"></script>
     <script
-      src="https://unpkg.com/three@0.149.0/build/three.min.js"
+      src="https://unpkg.com/three@0.149.0/build/three.min.js?v=31"
       onload="window.__threeLoaded=true;setBootStatus('Three loaded.')"
       onerror="document.getElementById('status').textContent='Failed to load three.min.js'"
     ></script>
     <script
-      src="https://unpkg.com/three@0.149.0/examples/js/controls/OrbitControls.js"
+      src="https://unpkg.com/three@0.149.0/examples/js/controls/OrbitControls.js?v=31"
       onload="window.__controlsLoaded=true;setBootStatus('OrbitControls loaded.')"
       onerror="document.getElementById('status').textContent='Failed to load OrbitControls.js'"
     ></script>
     <script
-      src="app-legacy.js"
-      onload="window.__legacyTagLoaded=true;setTimeout(() => { if (window.__xyzViewerLegacyLoaded) { setBootStatus('Legacy viewer booted.'); } else { document.getElementById('status').textContent = 'Legacy script failed to execute.'; } }, 200)"
+      src="app-legacy.js?v=31"
+      onload="window.__legacyTagLoaded=true;setTimeout(() => { if (window.__xyzViewerLegacyLoaded) { setBootStatus('Legacy viewer booted.'); } else { document.getElementById('status').textContent = 'Legacy script failed to execute.'; } }, 800)"
       onerror="document.getElementById('status').textContent='Failed to load app-legacy.js'"
     ></script>
   </body>
