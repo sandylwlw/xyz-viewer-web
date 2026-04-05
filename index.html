@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>XYZ Viewer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="background">
+      <div class="glow glow-a"></div>
+      <div class="glow glow-b"></div>
+      <div class="grid"></div>
+    </div>
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">XYZ</span>
+        <div>
+          <div class="brand-title">Molecule Viewer</div>
+          <div class="brand-subtitle">Open .xyz files and explore in 3D</div>
+        </div>
+      </div>
+      <div class="file-button" role="button" tabindex="0" id="open-button">
+        <span>Open XYZ</span>
+      </div>
+      <input id="file-input" class="file-input" type="file" accept=".xyz,.txt,chemical/x-xyz,text/plain" />
+    </header>
+
+    <main class="stage">
+      <canvas id="viewer"></canvas>
+      <section class="hud" id="hud">
+        <div class="hud-title">Load an .xyz file</div>
+        <div class="hud-text">
+          Tap “Open XYZ” to choose a file from the iPhone Files app. If .xyz is hidden, rename to .txt and try again.
+        </div>
+        <div class="hud-tip">Gestures: one finger orbit, two fingers pan, pinch to zoom.</div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="status" id="status">Ready.</div>
+      <div class="legend">
+        Atoms are colored by element. Bonds are inferred from covalent radii.
+      </div>
+    </footer>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/examples/jsm/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

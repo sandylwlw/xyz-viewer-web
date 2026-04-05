@@ -1,0 +1,463 @@
+<div id="xyzviewer" class="xyzviewer">
+  <div class="xyzviewer-topbar">
+    <div class="xyzviewer-brand">
+      <span class="xyzviewer-mark">XYZ</span>
+      <div>
+        <div class="xyzviewer-title">Molecule Viewer</div>
+        <div class="xyzviewer-subtitle">Open .xyz files and explore in 3D</div>
+      </div>
+    </div>
+    <button class="xyzviewer-button" type="button" id="xyzviewer-open">Open XYZ</button>
+    <input
+      id="xyzviewer-input"
+      class="xyzviewer-input"
+      type="file"
+      accept=".xyz,.txt,chemical/x-xyz,text/plain"
+    />
+  </div>
+
+  <div class="xyzviewer-stage">
+    <canvas class="xyzviewer-canvas"></canvas>
+    <div class="xyzviewer-hud" id="xyzviewer-hud">
+      <div class="xyzviewer-hud-title">Load an .xyz file</div>
+      <div class="xyzviewer-hud-text">
+        Tap “Open XYZ” to choose a file from the Files app. If .xyz is hidden, rename to
+        .txt and try again.
+      </div>
+      <div class="xyzviewer-hud-tip">
+        Gestures: one finger orbit, two fingers pan, pinch to zoom.
+      </div>
+    </div>
+  </div>
+
+  <div class="xyzviewer-footer">
+    <div class="xyzviewer-status" id="xyzviewer-status">Ready.</div>
+    <div class="xyzviewer-legend">
+      Atoms are colored by element. Bonds are inferred from covalent radii.
+    </div>
+  </div>
+</div>
+
+<style>
+  .xyzviewer {
+    --xyz-bg: #f7f4ef;
+    --xyz-ink: #1a1a1a;
+    --xyz-ink-soft: #3f3f3f;
+    --xyz-accent: #0f766e;
+    --xyz-panel: rgba(255, 255, 255, 0.85);
+    --xyz-panel-border: rgba(15, 23, 42, 0.08);
+    font-family: "Space Grotesk", "Segoe UI", sans-serif;
+    color: var(--xyz-ink);
+    background: linear-gradient(180deg, #fffaf2, #f3efe7);
+    border-radius: 24px;
+    border: 1px solid var(--xyz-panel-border);
+    padding: 22px;
+    box-shadow: 0 30px 60px rgba(15, 23, 42, 0.12);
+  }
+
+  .xyzviewer-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .xyzviewer-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .xyzviewer-mark {
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: 0.2em;
+    padding: 8px 12px;
+    border-radius: 14px;
+    background: white;
+    border: 1px solid var(--xyz-panel-border);
+  }
+
+  .xyzviewer-title {
+    font-weight: 600;
+    font-size: 18px;
+  }
+
+  .xyzviewer-subtitle {
+    font-size: 13px;
+    color: var(--xyz-ink-soft);
+  }
+
+  .xyzviewer-button {
+    appearance: none;
+    border: none;
+    background: var(--xyz-accent);
+    color: white;
+    padding: 12px 18px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 18px 30px rgba(15, 118, 110, 0.28);
+  }
+
+  .xyzviewer-button:focus {
+    outline: 3px solid rgba(15, 118, 110, 0.35);
+    outline-offset: 4px;
+  }
+
+  .xyzviewer-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+
+  .xyzviewer-stage {
+    position: relative;
+    margin-top: 18px;
+    border-radius: 20px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid var(--xyz-panel-border);
+    height: min(70vh, 720px);
+    min-height: 360px;
+  }
+
+  .xyzviewer-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+  }
+
+  .xyzviewer-hud {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    max-width: 320px;
+    padding: 16px 18px;
+    border-radius: 16px;
+    background: var(--xyz-panel);
+    border: 1px solid var(--xyz-panel-border);
+    box-shadow: 0 18px 30px rgba(15, 23, 42, 0.12);
+    backdrop-filter: blur(10px);
+  }
+
+  .xyzviewer-hud-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .xyzviewer-hud-text {
+    font-size: 14px;
+    color: var(--xyz-ink-soft);
+    line-height: 1.4;
+  }
+
+  .xyzviewer-hud-tip {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.7);
+    padding: 8px 10px;
+    border-radius: 10px;
+  }
+
+  .xyzviewer-footer {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--xyz-ink-soft);
+  }
+
+  .xyzviewer-status {
+    font-weight: 600;
+  }
+
+  .xyzviewer-legend {
+    text-align: right;
+    max-width: 55%;
+  }
+
+  @media (max-width: 720px) {
+    .xyzviewer {
+      padding: 18px;
+    }
+
+    .xyzviewer-stage {
+      height: 60vh;
+    }
+
+    .xyzviewer-hud {
+      position: static;
+      margin: 16px;
+      max-width: none;
+    }
+
+    .xyzviewer-footer {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .xyzviewer-legend {
+      max-width: none;
+    }
+  }
+</style>
+
+<script type="module">
+  import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
+  import { OrbitControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js";
+
+  const root = document.getElementById("xyzviewer");
+  if (!root) {
+    throw new Error("XYZ Viewer root element not found.");
+  }
+
+  const canvas = root.querySelector(".xyzviewer-canvas");
+  const statusEl = root.querySelector("#xyzviewer-status");
+  const hudEl = root.querySelector("#xyzviewer-hud");
+  const fileInput = root.querySelector("#xyzviewer-input");
+  const openButton = root.querySelector("#xyzviewer-open");
+  const stage = root.querySelector(".xyzviewer-stage");
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xfaf7f1);
+
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 2000);
+  camera.position.set(0, 0, 60);
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.minDistance = 5;
+  controls.maxDistance = 400;
+  controls.target.set(0, 0, 0);
+
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+  scene.add(ambientLight);
+
+  const keyLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  keyLight.position.set(20, 30, 40);
+  scene.add(keyLight);
+
+  const fillLight = new THREE.DirectionalLight(0xffffff, 0.35);
+  fillLight.position.set(-30, -10, 20);
+  scene.add(fillLight);
+
+  let moleculeGroup = null;
+
+  const elementColors = {
+    H: 0xf8fafc,
+    C: 0x111827,
+    N: 0x2563eb,
+    O: 0xdc2626,
+    F: 0x14b8a6,
+    P: 0xf59e0b,
+    S: 0xfacc15,
+    Cl: 0x22c55e,
+    Br: 0xfb923c,
+    I: 0xa855f7,
+    Cu: 0xb45309,
+    Fe: 0xdc2626,
+    Zn: 0x71717a,
+    Na: 0x60a5fa,
+    K: 0x7c3aed,
+    Ca: 0x9ca3af,
+    Mg: 0x34d399,
+    Si: 0x94a3b8,
+  };
+
+  const covalentRadii = {
+    H: 0.31,
+    C: 0.76,
+    N: 0.71,
+    O: 0.66,
+    F: 0.57,
+    P: 1.07,
+    S: 1.05,
+    Cl: 1.02,
+    Br: 1.2,
+    I: 1.39,
+    Cu: 1.32,
+    Fe: 1.24,
+    Zn: 1.22,
+    Na: 1.66,
+    K: 2.03,
+    Ca: 1.76,
+    Mg: 1.41,
+    Si: 1.11,
+  };
+
+  function setStatus(text) {
+    statusEl.textContent = text;
+  }
+
+  function parseXYZ(contents) {
+    const rawLines = contents.split(/\r?\n/);
+    const lines = rawLines.map((line) => line.trim()).filter((line) => line.length);
+    const atoms = [];
+    if (!lines.length) return atoms;
+
+    let startIndex = 0;
+    let declaredCount = null;
+    const firstLineCount = Number(lines[0]);
+    if (Number.isFinite(firstLineCount)) {
+      declaredCount = Math.max(0, Math.floor(firstLineCount));
+      startIndex = 2;
+    }
+
+    for (let i = startIndex; i < lines.length; i += 1) {
+      const parts = lines[i].split(/\s+/);
+      if (parts.length < 4) continue;
+      const element = parts[0];
+      const x = Number(parts[1]);
+      const y = Number(parts[2]);
+      const z = Number(parts[3]);
+      if (![x, y, z].every(Number.isFinite)) continue;
+      atoms.push({ element, position: new THREE.Vector3(x, y, z) });
+      if (declaredCount !== null && atoms.length >= declaredCount) break;
+    }
+
+    return atoms;
+  }
+
+  function buildMolecule(atoms) {
+    const group = new THREE.Group();
+    const atomMeshes = [];
+    const atomGeometry = new THREE.SphereGeometry(0.6, 32, 32);
+
+    atoms.forEach((atom) => {
+      const color = elementColors[atom.element] ?? 0x9ca3af;
+      const material = new THREE.MeshStandardMaterial({
+        color,
+        roughness: 0.35,
+        metalness: 0.1,
+      });
+      const radius = covalentRadii[atom.element] ?? 0.9;
+      const sphere = new THREE.Mesh(atomGeometry, material);
+      sphere.scale.setScalar(radius * 0.7 + 0.2);
+      sphere.position.copy(atom.position);
+      group.add(sphere);
+      atomMeshes.push({ mesh: sphere, radius, element: atom.element });
+    });
+
+    const bondMaterial = new THREE.MeshStandardMaterial({
+      color: 0x64748b,
+      roughness: 0.4,
+      metalness: 0.1,
+    });
+
+    for (let i = 0; i < atomMeshes.length; i += 1) {
+      for (let j = i + 1; j < atomMeshes.length; j += 1) {
+        const a = atomMeshes[i];
+        const b = atomMeshes[j];
+        const threshold = (a.radius + b.radius) * 1.2;
+        const distance = a.mesh.position.distanceTo(b.mesh.position);
+        if (distance > 0.1 && distance <= threshold) {
+          const bond = createBond(a.mesh.position, b.mesh.position, bondMaterial);
+          group.add(bond);
+        }
+      }
+    }
+
+    return group;
+  }
+
+  function createBond(start, end, material) {
+    const direction = new THREE.Vector3().subVectors(end, start);
+    const length = direction.length();
+    const cylinderGeometry = new THREE.CylinderGeometry(0.12, 0.12, length, 16);
+    const cylinder = new THREE.Mesh(cylinderGeometry, material);
+    const midpoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+    cylinder.position.copy(midpoint);
+    cylinder.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      direction.clone().normalize()
+    );
+    return cylinder;
+  }
+
+  function centerAndFrame(group) {
+    const box = new THREE.Box3().setFromObject(group);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    group.position.sub(center);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const distance = maxDim * 1.8 + 10;
+    camera.position.set(distance, distance * 0.6, distance);
+    controls.target.set(0, 0, 0);
+    controls.update();
+  }
+
+  function clearMolecule() {
+    if (!moleculeGroup) return;
+    scene.remove(moleculeGroup);
+    moleculeGroup.traverse((child) => {
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) child.material.dispose();
+    });
+    moleculeGroup = null;
+  }
+
+  function loadXYZ(contents, filename = "file.xyz") {
+    clearMolecule();
+    const atoms = parseXYZ(contents);
+    if (!atoms.length) {
+      setStatus("No atoms found. Check the XYZ file format.");
+      return;
+    }
+    moleculeGroup = buildMolecule(atoms);
+    scene.add(moleculeGroup);
+    centerAndFrame(moleculeGroup);
+    setStatus(`Loaded ${filename} (${atoms.length} atoms).`);
+    hudEl.style.display = "none";
+  }
+
+  function handleFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => loadXYZ(reader.result, file.name);
+    reader.onerror = () => setStatus("Failed to read the file.");
+    reader.readAsText(file);
+  }
+
+  fileInput.addEventListener("change", (event) => {
+    handleFile(event.target.files[0]);
+  });
+
+  openButton.addEventListener("click", () => {
+    fileInput.value = "";
+    fileInput.click();
+  });
+
+  function resize() {
+    const { clientWidth, clientHeight } = stage;
+    renderer.setSize(clientWidth, clientHeight, false);
+    camera.aspect = clientWidth / clientHeight;
+    camera.updateProjectionMatrix();
+  }
+
+  window.addEventListener("resize", resize);
+  resize();
+
+  function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  animate();
+</script>
