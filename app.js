@@ -981,28 +981,27 @@ function addGroupAtAtom(mesh) {
   }
   if (selectedGroupType === "NH2") {
     const bond = 1.03;
-    const tetra = [
-      new THREE.Vector3(1, 1, 1),
-      new THREE.Vector3(1, -1, -1),
-      new THREE.Vector3(-1, 1, -1),
-      new THREE.Vector3(-1, -1, 1),
-    ].map((v) => v.normalize());
-    const targetDir = direction.clone().negate();
-    let reserved = tetra[0];
-    let maxDot = reserved.dot(targetDir);
-    tetra.forEach((vec) => {
-      const dot = vec.dot(targetDir);
-      if (dot > maxDot) {
-        maxDot = dot;
-        reserved = vec;
-      }
-    });
-    baseQuat = new THREE.Quaternion().setFromUnitVectors(reserved, targetDir);
-    axis = targetDir.clone();
-    templateAtoms = tetra
-      .filter((vec) => vec !== reserved)
-      .slice(0, 2)
-      .map((vec) => ({ element: "H", position: vec.clone().multiplyScalar(bond) }));
+    const theta = (107 * Math.PI) / 180;
+    const cosTheta = Math.cos(theta);
+    const cosBetaSquared = (cosTheta + 0.5) / 1.5;
+    const cosBeta = Math.sqrt(Math.max(0, cosBetaSquared));
+    const beta = Math.acos(cosBeta);
+    const betaOpp = Math.PI - beta;
+    const phi = Math.PI / 3;
+    const makeVector = (angle) =>
+      new THREE.Vector3(
+        Math.sin(betaOpp) * Math.cos(angle),
+        Math.sin(betaOpp) * Math.sin(angle),
+        Math.cos(betaOpp)
+      );
+    const v1 = makeVector(phi);
+    const v2 = makeVector(-phi);
+    baseQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), direction);
+    axis = direction.clone();
+    templateAtoms = [
+      { element: "H", position: v1.clone().multiplyScalar(bond) },
+      { element: "H", position: v2.clone().multiplyScalar(bond) },
+    ];
   }
   const anchorPos = anchorInfo.mesh.position;
   const best = findBestRotation(templateAtoms, baseQuat, axis, anchorPos, anchorIndex);
