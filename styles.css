@@ -360,17 +360,22 @@ body {
   .topbar {
     flex-direction: column;
     gap: 16px;
+    padding: 14px 16px;
+  }
+
+  .brand-subtitle {
+    display: none;
   }
 
   .stage {
-    margin: 0 14px 12px;
-    height: 60vh;
-    min-height: 320px;
+    margin: 0 8px 8px;
+    height: 70vh;
+    min-height: 280px;
   }
 
   .hud {
     position: static;
-    margin: 18px;
+    margin: 12px;
     max-width: none;
     max-height: 50vh;
     overflow-y: auto;
@@ -378,7 +383,7 @@ body {
 
   .toolbox {
     position: static;
-    margin: 0 18px 18px;
+    margin: 0 12px 12px;
     width: auto;
   }
 
@@ -386,9 +391,10 @@ body {
     flex-direction: column;
     gap: 8px;
     text-align: center;
+    padding: 8px 16px 12px;
   }
 
   .legend {
-    max-width: none;
+    display: none;
   }
 }
