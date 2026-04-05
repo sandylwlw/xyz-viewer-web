@@ -1037,6 +1037,41 @@ function addGroupAtAtom(mesh) {
       },
     ];
   }
+  if (selectedGroupType === "Cyclohexyl") {
+    const bondCC = 1.54;
+    const bondCH = 1.09;
+    const h = 0.4;
+    const r = Math.sqrt(Math.max(0, bondCC * bondCC - (2 * h) * (2 * h)));
+    const center = new THREE.Vector3(0, 0, 0);
+    const ring = [];
+    for (let i = 0; i < 6; i += 1) {
+      const angle = (i * Math.PI) / 3;
+      const z = i % 2 === 0 ? h : -h;
+      ring.push(new THREE.Vector3(r * Math.cos(angle), r * Math.sin(angle), z));
+    }
+    const anchorPosLocal = ring[0].clone();
+    const atoms = [];
+    for (let i = 1; i < 6; i += 1) {
+      atoms.push({ element: "C", position: ring[i].clone().sub(anchorPosLocal) });
+    }
+    const axialDir = (zVal) => (zVal >= 0 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 0, -1));
+    const equatorialDir = (pos) => new THREE.Vector3(pos.x, pos.y, 0).normalize();
+    ring.forEach((pos, idx) => {
+      const localPos = pos.clone().sub(anchorPosLocal);
+      const axial = axialDir(pos.z).multiplyScalar(bondCH);
+      const eq = equatorialDir(pos).multiplyScalar(bondCH);
+      if (idx === 0) {
+        atoms.push({ element: "H", position: localPos.clone().add(axial) });
+      } else {
+        atoms.push({ element: "H", position: localPos.clone().add(axial) });
+        atoms.push({ element: "H", position: localPos.clone().add(eq) });
+      }
+    });
+    const targetDir = direction.clone().negate();
+    baseQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), targetDir);
+    axis = targetDir.clone();
+    templateAtoms = atoms;
+  }
   const anchorPos = anchorInfo.mesh.position;
   const best = findBestRotation(templateAtoms, baseQuat, axis, anchorPos, anchorIndex);
 
