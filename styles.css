@@ -502,11 +502,12 @@ body.pseudo-fullscreen .toolbox {
 
   .group-drawer {
     position: fixed;
-    left: 12px;
+    left: auto;
     right: 12px;
-    bottom: 96px;
+    bottom: 12px;
     display: block;
     z-index: 4;
+    width: min(220px, calc(100vw - 24px));
   }
 
 
