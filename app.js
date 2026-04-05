@@ -211,8 +211,9 @@ let dragStartPoint = null;
 let dragInitialPositions = null;
 let rotatingSelection = false;
 let rotateCenter = null;
-let rotateStartAngle = 0;
 let rotateStartPositions = null;
+let rotateLastPoint = null;
+let rotateAccumAngle = 0;
 let bondsHiddenForDrag = false;
 let selecting = false;
 let selectStart = null;
@@ -884,8 +885,9 @@ renderer?.domElement.addEventListener(
     if (rotateMode && editSelection.length) {
       rotatingSelection = true;
       rotateCenter = getSelectionCenter();
-      rotateStartAngle = getPointerAngle(event.clientX, event.clientY, rotateCenter);
       rotateStartPositions = editSelection.map((mesh) => mesh.position.clone());
+      rotateLastPoint = { x: event.clientX, y: event.clientY };
+      rotateAccumAngle = 0;
       if (controls && controls.enabled !== undefined) {
         controls.enabled = false;
       }
@@ -942,15 +944,17 @@ renderer?.domElement.addEventListener(
   { capture: true }
 );
 renderer?.domElement.addEventListener("pointermove", (event) => {
-  if (rotatingSelection && rotateCenter && rotateStartPositions) {
+  if (rotatingSelection && rotateCenter && rotateStartPositions && rotateLastPoint) {
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation?.();
-    const currentAngle = getPointerAngle(event.clientX, event.clientY, rotateCenter);
-    const deltaAngle = currentAngle - rotateStartAngle;
+    const dx = event.clientX - rotateLastPoint.x;
+    const dy = event.clientY - rotateLastPoint.y;
+    rotateLastPoint = { x: event.clientX, y: event.clientY };
+    rotateAccumAngle += (dx + dy * 0.3) * 0.01;
     const axis = new THREE.Vector3();
     camera.getWorldDirection(axis);
-    tempQuat.setFromAxisAngle(axis, deltaAngle);
+    tempQuat.setFromAxisAngle(axis, rotateAccumAngle);
     editSelection.forEach((mesh, index) => {
       const startPos = rotateStartPositions[index];
       const offset = startPos.clone().sub(rotateCenter);
@@ -1004,6 +1008,8 @@ renderer?.domElement.addEventListener("pointerup", (event) => {
     rotatingSelection = false;
     rotateCenter = null;
     rotateStartPositions = null;
+    rotateLastPoint = null;
+    rotateAccumAngle = 0;
     if (controls && controls.enabled !== undefined) {
       controls.enabled = true;
     }
