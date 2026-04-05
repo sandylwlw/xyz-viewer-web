@@ -2,6 +2,10 @@
 
 window.__xyzViewerLegacyLoaded = true;
 
+if (document.getElementById("status")) {
+  document.getElementById("status").textContent = "Legacy viewer booting...";
+}
+
 const canvas = document.getElementById("viewer");
 const statusEl = document.getElementById("status");
 const hudEl = document.getElementById("hud");

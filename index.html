@@ -69,11 +69,21 @@
         const scripts = [
           "https://unpkg.com/three@0.149.0/build/three.min.js",
           "https://unpkg.com/three@0.149.0/examples/js/controls/OrbitControls.js",
-          "app-legacy.js",
+          new URL("app-legacy.js", window.location.href).toString(),
         ];
         scripts.forEach((src) => {
           const tag = document.createElement("script");
           tag.src = src;
+          tag.onload = () => {
+            if (statusEl) {
+              statusEl.textContent = "Legacy script loaded...";
+            }
+          };
+          tag.onerror = () => {
+            if (statusEl) {
+              statusEl.textContent = `Failed to load ${src}`;
+            }
+          };
           document.body.appendChild(tag);
         });
       }, 1500);
