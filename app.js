@@ -728,7 +728,7 @@ if (rotateMoleculeToggle) {
     selecting = false;
     if (selectionBoxEl) selectionBoxEl.style.display = "none";
     syncControlsEnabled();
-    setStatus(rotateMoleculeMode ? "Rotate molecule enabled." : "Rotate molecule disabled.");
+    setStatus(rotateMoleculeMode ? "Spin molecule enabled." : "Spin molecule disabled.");
   });
 }
 
