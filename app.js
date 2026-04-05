@@ -799,6 +799,24 @@ function handleUndoShortcut(event) {
 document.addEventListener("keydown", handleUndoShortcut, { capture: true });
 window.addEventListener("keydown", handleUndoShortcut, { capture: true });
 
+document.addEventListener(
+  "beforeinput",
+  (event) => {
+    if (isIOSMobile) return;
+    if (event.inputType !== "historyUndo") return;
+    const target = event.target;
+    if (
+      target &&
+      (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    undoMove();
+  },
+  { capture: true }
+);
+
 function isFullscreen() {
   return !!(
     document.fullscreenElement ||
