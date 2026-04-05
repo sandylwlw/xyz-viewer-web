@@ -775,22 +775,34 @@ function updateFullscreenButton() {
 
 if (fullscreenButton) {
   fullscreenButton.addEventListener("click", () => {
-    const supportsFullscreen = !!(
+    const requestFullscreenFn =
       document.documentElement.requestFullscreen ||
       document.documentElement.webkitRequestFullscreen ||
       document.documentElement.mozRequestFullScreen ||
-      document.documentElement.msRequestFullscreen
-    );
+      document.documentElement.msRequestFullscreen;
     if (isFullscreen() || isPseudoFullscreen()) {
       if (isPseudoFullscreen()) {
         setPseudoFullscreen(false);
+        updateFullscreenButton();
       } else {
         exitFullscreen();
       }
-    } else if (supportsFullscreen) {
-      requestFullscreen(document.documentElement);
+    } else if (requestFullscreenFn) {
+      try {
+        const result = requestFullscreen(document.documentElement);
+        if (result && typeof result.catch === "function") {
+          result.catch(() => {
+            setPseudoFullscreen(true);
+            updateFullscreenButton();
+          });
+        }
+      } catch (error) {
+        setPseudoFullscreen(true);
+        updateFullscreenButton();
+      }
     } else {
       setPseudoFullscreen(true);
+      updateFullscreenButton();
     }
   });
   document.addEventListener("fullscreenchange", updateFullscreenButton);
