@@ -785,11 +785,16 @@ if (renderer) {
 }
 
 let downPoint = null;
-renderer?.domElement.addEventListener("pointerdown", (event) => {
+renderer?.domElement.addEventListener(
+  "pointerdown",
+  (event) => {
   downPoint = { x: event.clientX, y: event.clientY };
   if (!editMode) return;
   const hit = pickAtomForDrag(event.clientX, event.clientY);
   if (!hit) return;
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation?.();
   const rect = renderer.domElement.getBoundingClientRect();
   pointerNDC.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   pointerNDC.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -808,7 +813,9 @@ renderer?.domElement.addEventListener("pointerdown", (event) => {
     bondGroup.visible = false;
     bondsHiddenForDrag = true;
   }
-});
+  },
+  { capture: true }
+);
 renderer?.domElement.addEventListener("pointermove", (event) => {
   if (!draggingAtom || !dragPlane) return;
   const rect = renderer.domElement.getBoundingClientRect();
