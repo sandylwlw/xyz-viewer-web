@@ -2,16 +2,18 @@
 
 if (!window.__xyzViewerInitDone) {
   const statusNode = document.getElementById("status");
+  window.__xyzViewerLegacyLoaded = true;
+  if (statusNode) {
+    statusNode.textContent = "Legacy viewer booting...";
+  }
   if (!window.THREE) {
     if (statusNode) {
       statusNode.textContent = "THREE failed to load.";
     }
     return;
   }
-  window.__xyzViewerLegacyLoaded = true;
-  if (statusNode) {
-    statusNode.textContent = "Legacy viewer booting...";
-  }
+
+  try {
 
 const canvas = document.getElementById("viewer");
 const statusEl = document.getElementById("status");
@@ -377,9 +379,14 @@ function animate() {
   }
 }
 
-if (renderer) {
-  animate();
-}
+  if (renderer) {
+    animate();
+  }
   window.__xyzViewerInitDone = true;
   window.__xyzViewerLoaded = true;
+  } catch (error) {
+    if (statusNode) {
+      statusNode.textContent = `Legacy error: ${error.message || error}`;
+    }
+  }
 }
