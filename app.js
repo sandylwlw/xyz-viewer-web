@@ -5,6 +5,7 @@ const canvas = document.getElementById("viewer");
 const statusEl = document.getElementById("status");
 const hudEl = document.getElementById("hud");
 const fileInput = document.getElementById("file-input");
+const loadButton = document.getElementById("load-button");
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xfaf7f1);
@@ -232,10 +233,20 @@ function handleFile(file) {
 
 function bindFileInput() {
   const input = document.getElementById("file-input");
+  const button = document.getElementById("load-button");
   if (!input) return false;
   input.addEventListener("change", (event) => {
     handleFile(event.target.files[0]);
   });
+  input.addEventListener("input", (event) => {
+    const file = event.target.files?.[0];
+    if (file) setStatus(`Selected ${file.name}. Tap Load if needed.`);
+  });
+  if (button) {
+    button.addEventListener("click", () => {
+      handleFile(input.files?.[0]);
+    });
+  }
   return true;
 }
 

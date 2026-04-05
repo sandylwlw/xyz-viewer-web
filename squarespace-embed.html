@@ -9,7 +9,10 @@
     </div>
     <div class="xyzviewer-file-picker">
       <div class="xyzviewer-file-title">Open XYZ</div>
-      <input id="xyzviewer-input" class="xyzviewer-file-input" type="file" />
+      <div class="xyzviewer-file-row">
+        <input id="xyzviewer-input" class="xyzviewer-file-input" type="file" />
+        <button class="xyzviewer-file-load" id="xyzviewer-load" type="button">Load</button>
+      </div>
     </div>
   </div>
 
@@ -93,6 +96,12 @@
     align-items: flex-end;
   }
 
+  .xyzviewer-file-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
   .xyzviewer-file-title {
     font-size: 12px;
     font-weight: 600;
@@ -131,6 +140,17 @@
     cursor: pointer;
     box-shadow: 0 18px 30px rgba(15, 118, 110, 0.28);
     margin-right: 12px;
+  }
+
+  .xyzviewer-file-load {
+    border: none;
+    background: #0f172a;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
   }
 
   .xyzviewer-stage {
@@ -243,6 +263,7 @@
   const statusEl = root.querySelector("#xyzviewer-status");
   const hudEl = root.querySelector("#xyzviewer-hud");
   const fileInput = root.querySelector("#xyzviewer-input");
+  const loadButton = root.querySelector("#xyzviewer-load");
   const stage = root.querySelector(".xyzviewer-stage");
 
   const scene = new THREE.Scene();
@@ -452,6 +473,17 @@
   fileInput.addEventListener("change", (event) => {
     handleFile(event.target.files[0]);
   });
+
+  fileInput.addEventListener("input", (event) => {
+    const file = event.target.files?.[0];
+    if (file) setStatus(`Selected ${file.name}. Tap Load if needed.`);
+  });
+
+  if (loadButton) {
+    loadButton.addEventListener("click", () => {
+      handleFile(fileInput.files?.[0]);
+    });
+  }
 
 
   function resize() {

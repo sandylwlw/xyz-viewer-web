@@ -113,6 +113,12 @@ body {
   align-items: flex-end;
 }
 
+.file-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .file-picker-title {
   font-size: 12px;
   font-weight: 600;
@@ -151,6 +157,17 @@ body {
   cursor: pointer;
   box-shadow: 0 18px 30px rgba(15, 118, 110, 0.28);
   margin-right: 12px;
+}
+
+.file-load-button {
+  border: none;
+  background: #0f172a;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
 }
 
 .stage {
