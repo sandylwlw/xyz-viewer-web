@@ -1072,6 +1072,55 @@ function addGroupAtAtom(mesh) {
     axis = targetDir.clone();
     templateAtoms = atoms;
   }
+  if (selectedGroupType === "Cyclopentyl") {
+    const bondCC = 1.54;
+    const bondCH = 1.09;
+    const h = 0.6;
+    const radius = bondCC / (2 * Math.sin(Math.PI / 5));
+    const buildEnvelope = (sign) => {
+      const ring = [];
+      for (let i = 0; i < 5; i += 1) {
+        const angle = (i * 2 * Math.PI) / 5;
+        ring.push(new THREE.Vector3(radius * Math.cos(angle), radius * Math.sin(angle), 0));
+      }
+      const flapIndex = 0;
+      const zOffsets = [sign * h, sign * h * 0.5, 0, 0, sign * h * 0.5];
+      ring.forEach((pos, idx) => {
+        pos.z = zOffsets[idx];
+      });
+      const anchorPosLocal = ring[0].clone();
+      const atoms = [];
+      for (let i = 1; i < 5; i += 1) {
+        atoms.push({ element: "C", position: ring[i].clone().sub(anchorPosLocal) });
+      }
+      const axialDir = (zVal) => (zVal >= 0 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 0, -1));
+      const equatorialDir = (pos) => new THREE.Vector3(pos.x, pos.y, 0).normalize();
+      ring.forEach((pos, idx) => {
+        const localPos = pos.clone().sub(anchorPosLocal);
+        const axial = axialDir(pos.z).multiplyScalar(bondCH);
+        const eq = equatorialDir(pos).multiplyScalar(bondCH);
+        if (idx === 0) {
+          atoms.push({ element: "H", position: localPos.clone().add(axial) });
+        } else {
+          atoms.push({ element: "H", position: localPos.clone().add(axial) });
+          atoms.push({ element: "H", position: localPos.clone().add(eq) });
+        }
+      });
+      return atoms;
+    };
+    const targetDir = direction.clone().negate();
+    baseQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), targetDir);
+    axis = targetDir.clone();
+    const atomsUp = buildEnvelope(1);
+    const atomsDown = buildEnvelope(-1);
+    const bestUp = findBestRotation(atomsUp, baseQuat, axis, anchorInfo.mesh.position, anchorIndex);
+    const bestDown = findBestRotation(atomsDown, baseQuat, axis, anchorInfo.mesh.position, anchorIndex);
+    if (!bestDown || (bestUp && (bestUp.collisions < bestDown.collisions || (bestUp.collisions === bestDown.collisions && bestUp.minDistance >= bestDown.minDistance)))) {
+      templateAtoms = atomsUp;
+    } else {
+      templateAtoms = atomsDown;
+    }
+  }
   const anchorPos = anchorInfo.mesh.position;
   const best = findBestRotation(templateAtoms, baseQuat, axis, anchorPos, anchorIndex);
 
