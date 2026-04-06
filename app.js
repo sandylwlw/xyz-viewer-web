@@ -1164,7 +1164,7 @@ const groupTemplates = {
       const atoms = [];
       const anchor = new THREE.Vector3(radius, 0, 0);
       const ringNormal = new THREE.Vector3(0, 0, 1);
-      const halfAngle = THREE.MathUtils.degToRad(54.5);
+      const angleNearNormal = THREE.MathUtils.degToRad(35.5);
       for (let i = 1; i < 5; i += 1) {
         const angle = (i * 2 * Math.PI) / 5;
         const ringPos = new THREE.Vector3(radius * Math.cos(angle), radius * Math.sin(angle), 0);
@@ -1172,9 +1172,9 @@ const groupTemplates = {
         atoms.push({ element: "C", position: pos });
         const radial = ringPos.clone().normalize();
         if (i === 1) {
-          const tangent = ringNormal.clone().cross(radial).normalize();
-          const hDir1 = radial.clone().applyAxisAngle(tangent, halfAngle).normalize();
-          const hDir2 = radial.clone().applyAxisAngle(tangent, -halfAngle).normalize();
+          const tangent = radial.clone().cross(ringNormal).normalize();
+          const hDir1 = radial.clone().applyAxisAngle(tangent, angleNearNormal).normalize();
+          const hDir2 = radial.clone().applyAxisAngle(tangent, Math.PI - angleNearNormal).normalize();
           atoms.push({ element: "H", position: hDir1.multiplyScalar(hBond).sub(anchor) });
           atoms.push({ element: "H", position: hDir2.multiplyScalar(hBond).sub(anchor) });
         } else {
@@ -1285,7 +1285,13 @@ function addGroupAtAtom(mesh) {
   const isRing = ["Ph", "Cyclohexyl", "Cyclopentyl", "C5H5"].includes(selectedGroupType);
   let normal = null;
   if (isRing) {
-    if (neighborData.neighborCount >= 2) {
+    if (selectedGroupType === "C5H5") {
+      const axis = Math.abs(direction.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
+      normal = direction.clone().cross(axis).normalize();
+      if (normal.length() < 1e-3) {
+        normal = direction.clone().cross(new THREE.Vector3(0, 0, 1)).normalize();
+      }
+    } else if (neighborData.neighborCount >= 2) {
       normal = computeNeighborPlaneNormal(anchorIndex, neighborData.neighborIndices);
     }
     if (!normal) {
