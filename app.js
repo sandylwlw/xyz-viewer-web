@@ -6,12 +6,14 @@ const statusEl = document.getElementById("status");
 const hudEl = document.getElementById("hud");
 const fileInput = document.getElementById("file-input");
 const distanceLabel = document.getElementById("distance-label");
+const bondRotateAngleLabel = document.getElementById("bond-rotate-angle");
 const selectionBoxEl = document.getElementById("selection-box");
 const stageEl = document.querySelector(".stage");
 const editToggle = document.getElementById("edit-toggle");
 const exportButton = document.getElementById("export-button");
 const rotateMoleculeToggle = document.getElementById("rotate-molecule-toggle");
 const rotateToggle = document.getElementById("rotate-toggle");
+const bondRotateToggle = document.getElementById("bond-rotate-toggle");
 const undoButton = document.getElementById("undo-button");
 const toolboxEl = document.getElementById("toolbox");
 const toolboxToggle = document.getElementById("toolbox-toggle");
@@ -212,6 +214,7 @@ let bondsSkipped = false;
 let editMode = false;
 let rotateMoleculeMode = false;
 let rotateMode = false;
+let bondRotateMode = false;
 let draggingAtom = null;
 let dragOffset = null;
 let dragPlane = null;
@@ -223,6 +226,16 @@ let rotateCenter = null;
 let rotateStartPositions = null;
 let rotateLastPoint = null;
 let rotateAccumAngle = 0;
+let bondRotatePending = null;
+let bondRotateSelection = null;
+let bondRotateLine = null;
+let bondRotating = false;
+let bondRotateLastPoint = null;
+let bondRotateAxis = null;
+let bondRotateAnchor = null;
+let bondRotateAtoms = null;
+let bondRotatePendingHighlight = null;
+let bondRotateAngle = 0;
 let bondsHiddenForDrag = false;
 let selecting = false;
 let selectStart = null;
@@ -240,7 +253,7 @@ let pendingUndo = null;
 
 function syncControlsEnabled() {
   if (!controls || controls.enabled === undefined) return;
-  const allowOrbit = rotateMoleculeMode || !editMode;
+  const allowOrbit = (rotateMoleculeMode || !editMode) && !bondRotateMode;
   controls.enabled = allowOrbit;
   if (controls.enableRotate !== undefined) {
     controls.enableRotate = allowOrbit;
@@ -439,6 +452,7 @@ function clearMolecule() {
   atomMeshList = [];
   atomInfoList = [];
   clearMeasurement();
+  clearBondRotateSelection();
 }
 
 function clearMeasurement() {
@@ -466,6 +480,161 @@ function clearEditSelection() {
     }
   });
   editSelection = [];
+}
+
+function clearBondRotateSelection() {
+  if (bondRotateLine && moleculeGroup) {
+    moleculeGroup.remove(bondRotateLine);
+    bondRotateLine.geometry?.dispose();
+    bondRotateLine.material?.dispose();
+  }
+  bondRotateLine = null;
+  if (bondRotateSelection) {
+    [bondRotateSelection.aMesh, bondRotateSelection.bMesh].forEach((mesh) => {
+      if (mesh?.material?.emissive) {
+        mesh.material.emissive.setHex(0x000000);
+      }
+    });
+  }
+  if (bondRotatePendingHighlight?.material?.emissive) {
+    bondRotatePendingHighlight.material.emissive.setHex(0x000000);
+  }
+  bondRotatePendingHighlight = null;
+  bondRotateSelection = null;
+  bondRotatePending = null;
+  bondRotating = false;
+  bondRotateAtoms = null;
+  bondRotateAxis = null;
+  bondRotateAnchor = null;
+  bondRotateLastPoint = null;
+  bondRotateAngle = 0;
+  if (bondRotateAngleLabel) {
+    bondRotateAngleLabel.style.display = "none";
+  }
+}
+
+function setBondRotatePending(mesh) {
+  if (!mesh) return;
+  if (bondRotatePendingHighlight && bondRotatePendingHighlight !== mesh) {
+    bondRotatePendingHighlight.material?.emissive?.setHex(0x000000);
+  }
+  bondRotatePendingHighlight = mesh;
+  bondRotatePending = mesh;
+  if (mesh.material?.emissive) {
+    mesh.material.emissive.setHex(0xf59e0b);
+  }
+}
+
+function clearBondRotatePending() {
+  if (bondRotatePendingHighlight?.material?.emissive) {
+    bondRotatePendingHighlight.material.emissive.setHex(0x000000);
+  }
+  bondRotatePendingHighlight = null;
+  bondRotatePending = null;
+}
+
+function buildBondAdjacency() {
+  const count = atomInfoList.length;
+  const adjacency = Array.from({ length: count }, () => []);
+  for (let i = 0; i < count; i += 1) {
+    const a = atomInfoList[i];
+    for (let j = i + 1; j < count; j += 1) {
+      const b = atomInfoList[j];
+      const threshold = (a.radius + b.radius) * 1.2;
+      const distance = a.mesh.position.distanceTo(b.mesh.position);
+      if (distance > 0.1 && distance <= threshold) {
+        adjacency[i].push(j);
+        adjacency[j].push(i);
+      }
+    }
+  }
+  return adjacency;
+}
+
+function collectBondSide(startIndex, blockedIndex, adjacency) {
+  const visited = new Set();
+  const stack = [startIndex];
+  while (stack.length) {
+    const current = stack.pop();
+    if (current === blockedIndex || visited.has(current)) continue;
+    visited.add(current);
+    adjacency[current].forEach((next) => {
+      if (!visited.has(next) && next !== blockedIndex) {
+        stack.push(next);
+      }
+    });
+  }
+  return Array.from(visited);
+}
+
+function setBondRotateSelection(aMesh, bMesh) {
+  clearBondRotateSelection();
+  if (!aMesh || !bMesh) return false;
+  const aIndex = atomInfoList.findIndex((info) => info.mesh === aMesh);
+  const bIndex = atomInfoList.findIndex((info) => info.mesh === bMesh);
+  if (aIndex < 0 || bIndex < 0) return false;
+  const aInfo = atomInfoList[aIndex];
+  const bInfo = atomInfoList[bIndex];
+  const threshold = (aInfo.radius + bInfo.radius) * 1.2;
+  const distance = aInfo.mesh.position.distanceTo(bInfo.mesh.position);
+  if (!(distance > 0.1 && distance <= threshold)) {
+    setStatus("Those atoms are not bonded.");
+    return false;
+  }
+  const adjacency = buildBondAdjacency();
+  const side = collectBondSide(bIndex, aIndex, adjacency);
+  if (!side.length || side.length >= atomInfoList.length || side.includes(aIndex)) {
+    setStatus("Bond is in a ring; rotation side is ambiguous.");
+    return false;
+  }
+  bondRotateSelection = {
+    aMesh,
+    bMesh,
+    aIndex,
+    bIndex,
+    side,
+  };
+  if (aMesh.material?.emissive) aMesh.material.emissive.setHex(0xf59e0b);
+  if (bMesh.material?.emissive) bMesh.material.emissive.setHex(0xf59e0b);
+  bondRotatePendingHighlight = null;
+  bondRotatePending = null;
+  if (moleculeGroup) {
+    const geometry = new THREE.BufferGeometry().setFromPoints([
+      aMesh.position.clone(),
+      bMesh.position.clone(),
+    ]);
+    const material = new THREE.LineBasicMaterial({ color: 0xf59e0b });
+    bondRotateLine = new THREE.Line(geometry, material);
+    moleculeGroup.add(bondRotateLine);
+  }
+  setStatus("Bond selected. Drag to rotate the second atom side.");
+  return true;
+}
+
+function startBondRotation(event) {
+  if (!bondRotateSelection) return;
+  const { aMesh, bMesh, side } = bondRotateSelection;
+  bondRotating = true;
+  bondRotateLastPoint = { x: event.clientX, y: event.clientY };
+  bondRotateAnchor = aMesh.position.clone();
+  bondRotateAxis = bMesh.position.clone().sub(aMesh.position).normalize();
+  bondRotateAtoms = side.map((index) => atomInfoList[index].mesh);
+  bondRotateAngle = 0;
+  if (bondRotateAngleLabel) {
+    bondRotateAngleLabel.textContent = "0°";
+    bondRotateAngleLabel.style.display = "block";
+  }
+  pendingUndo = {
+    atoms: [...bondRotateAtoms],
+    before: bondRotateAtoms.map((mesh) => mesh.position.clone()),
+  };
+  if (controls && controls.enabled !== undefined) {
+    controls.enabled = false;
+  }
+  if (bondGroup && bondGroup.visible) {
+    bondGroup.visible = false;
+    bondsHiddenForDrag = true;
+  }
 }
 
 function setEditSelection(meshes) {
@@ -563,6 +732,7 @@ function undoMove() {
     rebuildBonds(atomInfoList, bondGroup, isIOS ? 8 : 16);
     bondGroup.visible = true;
   }
+  clearBondRotateSelection();
   updateMeasurementLine();
   setStatus("Undo complete.");
 }
@@ -616,6 +786,7 @@ function deleteSelectedAtoms() {
     rebuildBonds(atomInfoList, bondGroup, isIOS ? 8 : 16);
     bondGroup.visible = true;
   }
+  clearBondRotateSelection();
   pushUndoSnapshot({ type: "delete", removed: removedInfos });
   setStatus(`Deleted ${removedInfos.length} atoms.`);
 }
@@ -631,6 +802,11 @@ function setAddGroupMode(enabled) {
     if (!editMode) {
       editMode = true;
       if (editToggle) editToggle.checked = true;
+    }
+    if (bondRotateMode) {
+      bondRotateMode = false;
+      if (bondRotateToggle) bondRotateToggle.checked = false;
+      clearBondRotateSelection();
     }
     rotateMoleculeMode = false;
     if (rotateMoleculeToggle) rotateMoleculeToggle.checked = false;
@@ -678,6 +854,31 @@ function updateMeasurementLine() {
     distanceLabel.textContent = `${distance.toFixed(2)} A`;
   }
   updateDistanceLabel();
+}
+
+function updateBondRotateLine() {
+  if (!bondRotateLine || !bondRotateSelection) return;
+  const positions = bondRotateLine.geometry.attributes.position.array;
+  const { aMesh, bMesh } = bondRotateSelection;
+  positions[0] = aMesh.position.x;
+  positions[1] = aMesh.position.y;
+  positions[2] = aMesh.position.z;
+  positions[3] = bMesh.position.x;
+  positions[4] = bMesh.position.y;
+  positions[5] = bMesh.position.z;
+  bondRotateLine.geometry.attributes.position.needsUpdate = true;
+}
+
+function updateBondRotateAngleLabel() {
+  if (!bondRotateAngleLabel || !bondRotateSelection || !renderer) return;
+  const { aMesh, bMesh } = bondRotateSelection;
+  tempVec.copy(aMesh.position).add(bMesh.position).multiplyScalar(0.5);
+  const worldMid = moleculeGroup ? moleculeGroup.localToWorld(tempVec.clone()) : tempVec.clone();
+  const projected = worldMid.project(camera);
+  const rect = renderer.domElement.getBoundingClientRect();
+  const x = (projected.x * 0.5 + 0.5) * rect.width + rect.left;
+  const y = (-projected.y * 0.5 + 0.5) * rect.height + rect.top - 12;
+  bondRotateAngleLabel.style.transform = `translate(${x}px, ${y}px)`;
 }
 
 
@@ -1296,6 +1497,11 @@ if (editToggle) {
       setStatus("Edit mode on. Drag to move, or drag a box to select.");
     } else {
       clearEditSelection();
+      if (bondRotateMode) {
+        bondRotateMode = false;
+        if (bondRotateToggle) bondRotateToggle.checked = false;
+        clearBondRotateSelection();
+      }
       rotateMoleculeMode = false;
       if (rotateMoleculeToggle) rotateMoleculeToggle.checked = false;
       rotateMode = false;
@@ -1315,6 +1521,11 @@ if (rotateMoleculeToggle) {
       if (editToggle) editToggle.checked = true;
       clearMeasurement();
     }
+    if (rotateMoleculeMode && bondRotateMode) {
+      bondRotateMode = false;
+      if (bondRotateToggle) bondRotateToggle.checked = false;
+      clearBondRotateSelection();
+    }
     selecting = false;
     if (selectionBoxEl) selectionBoxEl.style.display = "none";
     syncControlsEnabled();
@@ -1333,8 +1544,38 @@ if (rotateToggle) {
       clearMeasurement();
       return;
     }
+    if (rotateMode && bondRotateMode) {
+      bondRotateMode = false;
+      if (bondRotateToggle) bondRotateToggle.checked = false;
+      clearBondRotateSelection();
+    }
     syncControlsEnabled();
     setStatus(rotateMode ? "Rotate selection enabled." : "Rotate selection disabled.");
+  });
+}
+
+if (bondRotateToggle) {
+  bondRotateToggle.checked = bondRotateMode;
+  bondRotateToggle.addEventListener("change", () => {
+    bondRotateMode = bondRotateToggle.checked;
+    if (bondRotateMode && !editMode) {
+      editMode = true;
+      if (editToggle) editToggle.checked = true;
+      clearMeasurement();
+    }
+    if (bondRotateMode) {
+      rotateMoleculeMode = false;
+      if (rotateMoleculeToggle) rotateMoleculeToggle.checked = false;
+      rotateMode = false;
+      if (rotateToggle) rotateToggle.checked = false;
+      if (addGroupMode) setAddGroupMode(false);
+      clearBondRotateSelection();
+      setStatus("Bond rotate mode on. Click two atoms to select a bond.");
+    } else {
+      clearBondRotateSelection();
+      setStatus("Bond rotate mode off.");
+    }
+    syncControlsEnabled();
   });
 }
 
@@ -1471,6 +1712,29 @@ window.addEventListener("keydown", (event) => {
   if (key === "d") {
     event.preventDefault();
     deleteSelectedAtoms();
+  }
+  if (key === "b") {
+    event.preventDefault();
+    bondRotateMode = !bondRotateMode;
+    if (bondRotateMode && !editMode) {
+      editMode = true;
+      if (editToggle) editToggle.checked = true;
+      clearMeasurement();
+    }
+    if (bondRotateMode) {
+      rotateMoleculeMode = false;
+      if (rotateMoleculeToggle) rotateMoleculeToggle.checked = false;
+      rotateMode = false;
+      if (rotateToggle) rotateToggle.checked = false;
+      if (addGroupMode) setAddGroupMode(false);
+      clearBondRotateSelection();
+      setStatus("Bond rotate mode on. Click two atoms to select a bond.");
+    } else {
+      clearBondRotateSelection();
+      setStatus("Bond rotate mode off.");
+    }
+    if (bondRotateToggle) bondRotateToggle.checked = bondRotateMode;
+    syncControlsEnabled();
   }
 });
 
@@ -1637,6 +1901,10 @@ function animate() {
   if (renderer) {
     renderer.render(scene, camera);
     updateDistanceLabel();
+    updateBondRotateLine();
+    if (bondRotating && bondRotateAngleLabel && bondRotateAngleLabel.style.display === "block") {
+      updateBondRotateAngleLabel();
+    }
     const gl = renderer.getContext?.();
     if (gl) {
       const error = gl.getError();
@@ -1687,6 +1955,46 @@ renderer?.domElement.addEventListener(
   (event) => {
     downPoint = { x: event.clientX, y: event.clientY };
     if (!editMode) return;
+    if (bondRotateMode) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+      const hit = pickAtomForDrag(event.clientX, event.clientY);
+      if (bondRotating) return;
+      if (bondRotatePending && hit === bondRotatePending) {
+        clearBondRotatePending();
+        setStatus("Selection cleared.");
+        return;
+      }
+      if (bondRotatePending && hit && hit !== bondRotatePending) {
+        const success = setBondRotateSelection(bondRotatePending, hit);
+        if (!success) {
+          clearBondRotateSelection();
+        }
+        return;
+      }
+      if (bondRotatePending && !hit) {
+        setStatus("Select a second atom to define the bond.");
+        return;
+      }
+      if (!bondRotateSelection) {
+        if (hit) {
+          setBondRotatePending(hit);
+          setStatus("Select the second atom for the bond.");
+        } else {
+          setStatus("Click an atom to start bond selection.");
+        }
+        return;
+      }
+      if (hit && hit !== bondRotateSelection.aMesh && hit !== bondRotateSelection.bMesh) {
+        clearBondRotateSelection();
+        setBondRotatePending(hit);
+        setStatus("Select the second atom for the new bond.");
+        return;
+      }
+      startBondRotation(event);
+      return;
+    }
     const hit = pickAtomForDrag(event.clientX, event.clientY);
     if (rotateMoleculeMode) {
       return;
@@ -1786,6 +2094,32 @@ renderer?.domElement.addEventListener(
   { capture: true }
 );
 renderer?.domElement.addEventListener("pointermove", (event) => {
+  if (bondRotating && bondRotateAxis && bondRotateAnchor && bondRotateAtoms && bondRotateLastPoint) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation?.();
+    const dx = event.clientX - bondRotateLastPoint.x;
+    const dy = event.clientY - bondRotateLastPoint.y;
+    bondRotateLastPoint = { x: event.clientX, y: event.clientY };
+    const angleDelta = (dx + dy * 0.3) * 0.01;
+    bondRotateAngle += angleDelta;
+    tempQuat.setFromAxisAngle(bondRotateAxis, angleDelta);
+    bondRotateAtoms.forEach((mesh) => {
+      tempVec.copy(mesh.position).sub(bondRotateAnchor);
+      tempVec.applyQuaternion(tempQuat);
+      mesh.position.copy(bondRotateAnchor).add(tempVec);
+    });
+    updateMeasurementLine();
+    updateBondRotateLine();
+    if (bondRotateAngleLabel) {
+      bondRotateAngleLabel.textContent = `${(bondRotateAngle * 180 / Math.PI).toFixed(0)}°`;
+      updateBondRotateAngleLabel();
+    }
+    return;
+  }
+  if (bondRotateMode) {
+    return;
+  }
   if (rotatingSelection && rotateCenter && rotateStartPositions && rotateLastPoint) {
     event.preventDefault();
     event.stopPropagation();
@@ -1846,6 +2180,31 @@ renderer?.domElement.addEventListener("pointermove", (event) => {
 });
 renderer?.domElement.addEventListener("pointerup", (event) => {
   if (!downPoint) return;
+  if (bondRotateMode && !bondRotating) {
+    downPoint = null;
+    return;
+  }
+  if (bondRotating) {
+    bondRotating = false;
+    bondRotateLastPoint = null;
+    finalizeUndoSnapshot();
+    if (controls && controls.enabled !== undefined) {
+      controls.enabled = true;
+    }
+    if (bondsHiddenForDrag && bondGroup && showBonds && !bondsSkipped) {
+      rebuildBonds(atomInfoList, bondGroup, isIOS ? 8 : 16);
+      bondGroup.visible = true;
+      bondsHiddenForDrag = false;
+    }
+    updateMeasurementLine();
+    updateBondRotateLine();
+    if (bondRotateAngleLabel) {
+      bondRotateAngleLabel.style.display = "none";
+    }
+    setStatus("Bond rotation complete.");
+    downPoint = null;
+    return;
+  }
   if (rotatingSelection) {
     rotatingSelection = false;
     rotateCenter = null;

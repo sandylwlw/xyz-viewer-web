@@ -32,6 +32,7 @@
     <main class="stage">
       <canvas id="viewer" tabindex="0"></canvas>
       <div class="distance-label" id="distance-label"></div>
+      <div class="bond-rotate-angle" id="bond-rotate-angle"></div>
       <div class="selection-box" id="selection-box" aria-hidden="true"></div>
       <section class="hud" id="hud">
         <div class="hud-title">Load an .xyz file</div>
@@ -63,6 +64,10 @@
         <label class="tool-toggle">
           <input id="rotate-toggle" type="checkbox" />
           <span>Rotate selection</span>
+        </label>
+        <label class="tool-toggle">
+          <input id="bond-rotate-toggle" type="checkbox" />
+          <span>Bond rotate</span>
         </label>
         <div class="group-adder">
           <label class="group-adder-label" for="group-select">Add group</label>
